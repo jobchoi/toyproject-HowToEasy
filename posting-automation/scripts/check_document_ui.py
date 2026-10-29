@@ -1,0 +1,61 @@
+"""Opt-in local browser check for paste/editor/library/template workflows."""
+import os,sys
+from pathlib import Path
+from uuid import uuid4
+root=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(root/'scripts'))
+from naver_browser_probe import configure_korean_fonts
+configure_korean_fonts()
+os.environ['PLAYWRIGHT_BROWSERS_PATH']=str(root/'.local/browsers')
+from playwright.sync_api import sync_playwright,expect
+with sync_playwright() as p:
+    browser=p.chromium.launch(headless=True,channel='chromium')
+    page=browser.new_page(viewport={'width':1440,'height':1000})
+    errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
+    page.goto(os.environ.get('POSTING_UI_TEST_URL','http://127.0.0.1:8011/'))
+    expect(page.locator('#manage-template')).to_contain_text('기본 템플릿')
+    suffix=uuid4().hex[:6];title='평문 이어쓰기 '+suffix
+    page.locator('#plain-text').fill('안녕하세요. 자료 소개입니다.\n\n1. 기본 정보\n자료에서 확인한 내용입니다.\n\n• 첫째\n• 둘째')
+    page.locator('#title').fill(title)
+    page.locator('#prepare').click()
+    expect(page.locator('#editing')).to_be_visible()
+    expect(page.locator('#document-editor')).to_be_visible()
+    expect(page.locator('#markdown')).to_be_hidden()
+    expect(page.locator('#blocks')).to_contain_text('본문')
+    page.locator('#add-block').click()
+    page.locator('#blocks textarea').last.fill('화면에서 추가한 문단입니다.')
+    page.locator('#apply').click()
+    expect(page.locator('#save-state')).to_contain_text('이 PC에 저장됨')
+    expect(page.frame_locator('#preview').locator('body')).to_contain_text('화면에서 추가한 문단입니다.')
+    page.locator('#article-search').fill(title)
+    expect(page.locator('#article-list .article-row')).to_have_count(1)
+    page.locator('#article-list').get_by_role('button',name='이전 버전').click()
+    expect(page.locator('#article-list .version-list button')).to_have_count(2)
+    page.locator('#article-list').get_by_role('button',name='이어쓰기').click()
+    expect(page.locator('#blocks textarea').last).to_have_value('화면에서 추가한 문단입니다.')
+    page.reload()
+    expect(page.locator('#title')).to_have_value(title)
+    page.locator('#new-template').click()
+    page.locator('#template-name').fill('내 소개 템플릿 '+suffix)
+    page.locator('#template-intro').fill('사용자 도입 문구입니다.')
+    page.locator('#template-sections').fill('기본 정보\n교육\n다음 이야기')
+    page.locator('#template-outro').fill('작성자가 확인한 마무리입니다.')
+    page.locator('#preview-template').click()
+    expect(page.frame_locator('#template-preview').locator('body')).to_contain_text('사용자 도입 문구입니다.')
+    page.locator('#save-template').click()
+    expect(page.locator('#template-status')).to_contain_text('저장했습니다')
+    page.locator('#template-intro').fill('바뀐 도입 문구입니다.')
+    page.locator('#save-template').click()
+    expect(page.locator('#manage-template')).to_contain_text('v2')
+    page.locator('#template-name').fill('복제 템플릿 '+suffix)
+    page.locator('#clone-template').click()
+    expect(page.locator('#template-status')).to_contain_text('복제했습니다')
+    page.locator('#apply-template').click()
+    expect(page.frame_locator('#preview').locator('body')).to_contain_text('바뀐 도입 문구입니다.')
+    expect(page.locator('#warnings')).to_contain_text('생성 당시')
+    page.screenshot(path='/tmp/posting-document-ui.png',full_page=True)
+    page.set_viewport_size({'width':390,'height':844})
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'mobile overflow'
+    assert not errors,errors
+    print('Document UI OK: paste, blocks, save, library/history, reload, template preview/create/version/clone/apply, mobile')
+    browser.close()

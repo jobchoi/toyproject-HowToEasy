@@ -1,0 +1,10 @@
+{
+  "python_minimum": [3, 11],
+  "environment": ".venv-ui",
+  "profiles": {
+    "ui": "requirements-ui.txt",
+    "dev": "requirements-dev.txt",
+    "test": "requirements-dev.txt"
+  },
+  "test_command": ["-m", "unittest", "discover", "-s", "tests", "-v"]
+}

@@ -174,3 +174,19 @@ UI 템플릿(Jinja2)과 포스팅 콘텐츠 템플릿은 별개다. 콘텐츠 �
 ### 참고 PDF 확인 결과 (2026-10-23)
 
 사용자가 reference-posts에 제공한 PDF 8페이지를 모두 시각적으로 확인했다. 제목은 '세계의 나라들(서아시아) #12. 이스라엘'이다. 번호형 정보 단락·사진/출처·구분선·마무리·참고자료/태그가 확인되어 docs/templates/INFORMATION_ARTICLE_V1.md에 관찰 결과와 재사용 템플릿 초안을 남겼다. 원래 요청 URL과 PDF의 글 대응, 전체 사실 검증, 정확한 CSS, 네이버 편집기 결과는 미확인이다. 서비스 코드는 작성하지 않았다.
+
+### 2026-10-26 진행표·환경/자동화 검토 추가
+
+현재 상태와 다음 작업의 체크박스는 [TASKS.md](../TASKS.md)에서 관리한다. [개발 환경과 자동화 방향](DEVELOPMENT_DIRECTION.md)에 실제 기존 JavaScript/React 구성, venv 개발·Docker 후속 배포 추천, Python 코드 재사용 학습 과제, API가 없는 네이버에 대한 로컬 브라우저/도우미/파일 전달 경계를 정리했다. 새 구조 채택이나 실제 기능 구현 완료를 의미하지 않는다.
+
+### 구현된 플랫폼 경계와 오프라인 코어
+
+posting_tool/providers의 Publisher ABC를 플랫폼별로 상속하고 Capability와 Registry로 지원 작업을 구분한다. 현재 ManualExportPublisher/MockPublisher만 구현했으며 네이버/Blogger 실모듈은 없다. 원고 준비(Service)·입력(Source)·표현(rendering)·파일 전달(exporting)을 분리했다. CLI가 같은 코어를 호출하며 향후 MVC Controller에서도 재사용한다. 외부 호출의 재시도/멱등성/사용자 소유권은 실제 저장소 서비스와 함께 확장해야 한다. 구체 사용법과 현재 제한은 README.md에 기록했다.
+
+### 로컬 웹 View 구현
+
+사용자 CLI 대신 UI 요청에 따라 FastAPI web.py Controller, web_service.py Workspace Service, views/ HTML/CSS/JS로 구성했다. 기존 prepare_article/export_article/Publisher 경계를 그대로 재사용한다. 초기 서버 템플릿 대신 고정 HTML View와 작은 JavaScript를 사용했고 별도 Node 빌드는 도입하지 않았다. 원고 버전은 UUID 파일 묶음으로 보존하며 정식 DB·사용자 모델 도입은 후속 범위다. 로컬 loopback 전용으로 실행하고 외부 호스팅은 하지 않는다.
+
+### 문서 블록·원고 버전·콘텐츠 템플릿 구현
+
+documents.py가 평문/제한 Markdown ↔ 블록 데이터 계약을 처리하고 View는 블록 유형 선택/텍스트/순서를 편집한다. Article의 선택 필드 article_id/parent_id/saved_at로 기존 원고 호환성을 유지하면서 목록과 이력을 제공한다. templates.py는 데이터형 템플릿 저장/버전/복제/미리보기/적용을 담당한다. 기존 core Publisher 경계는 유지하며 외부 호출과 분리했다. 저장은 현재 파일 기반 단일 프로세스/단일 사용자 설계이며 다중 사용자 DB 제약을 구현했다고 간주하지 않는다.

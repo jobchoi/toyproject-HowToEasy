@@ -1,0 +1,24 @@
+# 이어서 작업하기
+
+현재: 네이버 계정 보호조치로 로그인/실업로드는 후순위. 기존 backend/frontend를 변경하지 않는다.
+
+신규 코어는 posting_tool 패키지이며 Python 표준 라이브러리만 사용한다. README 명령으로 예제 입력 → 원고 → HTML 미리보기·내보내기를 재현할 수 있다. Publisher 추상 클래스/기능 선언/Registry로 플랫폼을 확장한다. 수동 내보내기와 mock만 구현되어 있다. 네이버/Blogger 실어댑터는 없다.
+
+다음: 가져온 원고·생성 버전 저장소와 편집/검토 화면을 연결한다. 현재는 단일 사용자 CLI와 정적 HTML이다. 이미지/PDF/OCR·URL 참고자료 분리 추출·완전한 Markdown·템플릿 제작 UI·AI 집필은 미완료다. 외부 게시 작업의 영속 큐/서비스 승인·원격 재확인도 별도 구현해야 한다.
+
+사용자 자료/PDF/출력(.local)은 Git에서 제외한다. 커밋/push 성공을 가정하지 말고 Git 상태를 확인한다. 이전 네이버 시험 기록 DB는 삭제하지 않는다.
+
+추가: 로컬 웹 UI가 구현되어 있다. `bash scripts/run_ui.sh`로 127.0.0.1:8010에서 실행한다. Controller(web.py)/Service(web_service.py)/View(views/)로 분리해 기존 코어를 호출한다. 저장은 SQLite 대신 .local/ui/<UUID>의 원고/내보내기 파일이며 편집 시 새 UUID를 만든다. 사용자 인증이 없는 로컬 단일 사용자 도구로 인터넷에 노출하지 않는다. 다음 UI 확장은 원고 목록·버전 비교·편집 경험 개선이다.
+
+
+요청 1~5 후속 구현: documents.py가 평문/제한 Markdown과 문서 블록을 변환한다. templates.py의 데이터형 템플릿은 버전별 불변 JSON으로 저장하며 임의 코드는 실행하지 않는다. Article에 article_id/parent_id/saved_at를 기본값 있는 필드로 추가해 이전 원고와 호환한다. 목록은 원고별 최신 버전을 묶고 history=true로 이전 버전을 조회한다. 오래된 버전의 저장은 차단한다. UI는 평문/파일 입력, 문서 블록/고급 Markdown 전환, 원고 검색/이어쓰기/이력, 템플릿 제작/미리보기/복제/사본 적용을 제공한다. 기본 템플릿은 상수이며 변경은 별도 사용자 템플릿으로 저장된다. 의미별 AI 분석·부분 글자 서식·이미지·자동 저장은 미구현이다.
+
+검증: 전체 unittest 19개 통과. scripts/check_document_ui.py와 check_ui_browser.py로 새 흐름 및 이전 업로드/편집/다운로드/모바일을 검증했다. 브라우저 스크립트는 별도로 실행 중인 로컬 서버를 필요로 하고 POSTING_UI_TEST_URL로 QA 포트를 선택한다. 외부 플랫폼·네이버 계정에는 접속하지 않았다.
+
+샘플 추가: sample_templates.py의 4종은 불변 기본 템플릿이며 styles.py의 허용된 디자인과 연결한다. Article.style이 저장/로딩/HTML 내보내기/웹 미리보기에 전달된다. 갤러리 GET은 저장 없이 표시하고 샘플 원고 열기는 POST로 명시적으로 저장한다. 사용자 템플릿 복제 시 style도 보존한다. .local/template-samples/에 독립 HTML 샘플이 있으나 Git에서는 제외된다. 원격 블로그 편집기가 CSS를 유지할 것이라고 가정하지 않는다.
+
+최근 변경: 일반 UI의 개발 체크표 제거. 템플릿 선택/제작 입력은 자동 미리보기, 원고 생성은 jobs.py의 단일 워커와 파일 상태로 실제 단계 표시/복구한다. app startup마다 미완료 상태를 interrupted로 표시하므로 다중 워커로 실행하지 않는다. 디자인 조절은 appearance dict allowlist로 관리하고 Article/템플릿 버전에 스냅샷 저장한다.
+
+환경: bash scripts/setup_project.sh --profile dev|test, 이후 update_project.sh는 현재 upstream fast-forward만 수행하며 미커밋 변경을 보존한다. setup_project.sh --install-system은 사용자가 명시할 때만 apt를 실행한다. PI_SETUP.md의 최초 clone/SSH 터널 안내를 따른다. 라즈서버 SSH 인증이 거부되어 실제 서버 배포·ARM 실행은 아직 없다. Git 원격 반영 상태도 별도로 확인한다.
+
+최종 검증: 전체 26개 테스트 및 check_feedback_ui.py/check_document_ui.py/check_ui_browser.py 브라우저 흐름 통과. 다음 기능은 사진·캡션·출처를 갖춘 원고 작성이다.
