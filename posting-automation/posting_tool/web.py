@@ -2,6 +2,8 @@
 from io import BytesIO
 from contextlib import asynccontextmanager
 import json
+import os
+import re
 from pathlib import Path
 import secrets
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -16,7 +18,20 @@ DOWNLOADS = {'article.md', 'article.html', 'article.json', 'preview.html', 'brow
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def configured_hosts():
+    hosts = ['127.0.0.1', 'localhost', 'testserver']
+    for host in os.environ.get('POSTING_ALLOWED_HOSTS', '').split(','):
+        host = host.strip().lower()
+        if not host:
+            continue
+        if len(host) > 253 or any(not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', label) for label in host.split('.')):
+            raise ValueError('POSTING_ALLOWED_HOSTS에는 포트·프로토콜·와일드카드 없는 호스트 이름을 입력하세요.')
+        hosts.append(host)
+    return hosts
+
+
 def create_app(workspace=None):
+    allowed_hosts = configured_hosts()
     store = Workspace(workspace or ROOT / '.local/ui')
     from .jobs import Jobs
     jobs=Jobs(store)
@@ -26,7 +41,7 @@ def create_app(workspace=None):
         jobs.close()
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None,lifespan=lifespan)
     token = secrets.token_urlsafe(32)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', 'testserver'])
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
     @app.middleware('http')
     async def local_requests(request, call_next):

@@ -78,3 +78,20 @@ project-environment.json, setup_project.sh/project_setup.py, update_project.sh�
 - 좌측 메뉴 순서를 DOM 본문 순서에 맞춤. scroll/resize/본문 크기 변화 시 현재 구역을 계산해 강조·aria-current·상단 경로 갱신.
 - 네이티브 앵커로 직접 URL·뒤로/앞으로 이동 보존, 키보드 이동 시 구역에 포커스. 모바일에서도 네 개 메뉴를 표시하고 sticky 메뉴 높이에 맞춰 scroll-margin 계산.
 - check_navigation_ui.py: 메뉴 순서·클릭·직접 스크롤·편집 구역·키보드·이력·새로고침·모바일 검증 통과.
+
+## Tailscale 기존 Funnel 분리 연결 준비
+
+사용자 제공 상태에서 기존 443 Funnel → 127.0.0.1:8000 확인. 기존 서비스 변경 없이 별도 8443 Serve 연결을 안내한다. web.py는 POSTING_ALLOWED_HOSTS의 명시적 호스트를 추가하고 run_ui.sh는 loopback 프록시만 신뢰한다. test_proxy_access.py 2개 테스트로 HTTPS Origin/호스트/토큰/프록시 신뢰 경계 검증. 실제 라즈서버 설정 변경/접속은 미실행이며 이번 변경도 커밋/push 전이다.
+
+## 서버 구조 조사 도구
+
+scripts/audit_server.py 추가. 파일 본문·환경변수·프로세스 실행 인자를 수집하지 않는 범위 제한 읽기 전용 조사이며 보고서만 새로 생성한다. Git 변경 개수, Compose 위치, Docker 마운트/정책, 실행 서비스, TCP 포트, Tailscale 라우팅/Funnel을 기록한다. 자체 실행 환경에서 제한 범위 smoke 실행 및 회귀 테스트 5개 통과. 라즈서버 보고서 수신·실제 디렉터리 정리/서비스 전환은 아직 수행하지 않았다.
+
+
+## 사용자 라즈서버 보고서 분석
+
+20261030-121331 보고서를 읽고 SERVER_LAYOUT_REVIEW.md에 확인 사실/미확인/배치안/전환 순서를 기록했다. 기존 my-server 운영 경로는 유지하고 신규 포스팅부터 독립 Compose로 전환하도록 정리했다. 기존 Compose 두 파일이 my-server 이름을 공유하며 File Browser unhealthy/익명 볼륨, 조사 시 8010 리스너 부재를 구분했다. 실서버 변경은 하지 않았다. 조사 도구의 사용자 지정 compose.*.yml 탐색 누락도 보완하고 기존 회귀 검사에 포함했다. 원본 보고서는 Git에 복사하지 않았다.
+
+## Push 준비 검증
+
+Tailscale 명시적 호스트/loopback HTTPS 프록시 설정, 읽기 전용 서버 조사 도구, 사용자 보고서 기반 배치 검토 문서를 커밋 대상으로 정리했다. RUN_BROWSER_TESTS=1 전체 unittest 35개 통과, Python 컴파일·run_ui.sh 문법·diff 공백 검사 통과. 원본 서버 보고서·로컬 원고·사진·venv는 포함하지 않는다. 사진/메뉴 UX는 이전 커밋 2ae9295에 포함되어 있다. 이번 요청은 push 준비이며 원격 push는 수행하지 않는다.
