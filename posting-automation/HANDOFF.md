@@ -22,3 +22,8 @@
 환경: bash scripts/setup_project.sh --profile dev|test, 이후 update_project.sh는 현재 upstream fast-forward만 수행하며 미커밋 변경을 보존한다. setup_project.sh --install-system은 사용자가 명시할 때만 apt를 실행한다. PI_SETUP.md의 최초 clone/SSH 터널 안내를 따른다. 라즈서버 SSH 인증이 거부되어 실제 서버 배포·ARM 실행은 아직 없다. Git 원격 반영 상태도 별도로 확인한다.
 
 최종 검증: 전체 26개 테스트 및 check_feedback_ui.py/check_document_ui.py/check_ui_browser.py 브라우저 흐름 통과. 다음 기능은 사진·캡션·출처를 갖춘 원고 작성이다.
+
+
+2026-10-30: 사진 우선 단계 구현 완료. media.py가 해시 기반 로컬 래스터 업로드/참조/인라인화를 담당한다. documents.py image 블록은 text(alt), src, caption, source를 사용하며 Markdown은 표준 상대 경로 이미지 + `사진 설명: ...`/`사진 출처: ...` 연속 두 줄로 직렬화한다. 본문/메타데이터는 HTML 이스케이프하고 출처는 http(s)만 허용한다. Workspace.save가 전역 assets 저장소를 사용해 HTML에 data 이미지를 포함하고 버전 폴더에 참조 파일을 복사한다. ZIP에도 사진을 포함한다. 삭제한 사진 자동 GC는 없으며 이전 버전/백업을 보존한다. 외부 이미지 URL 가져오기·SVG·자동 압축·사진 편집·ZIP 재가져오기는 미구현. 전체 28개 테스트와 check_media_ui.py 로컬 브라우저 검증 통과. 다음은 TASKS.md 마지막 기능 순서 참고. 이전 develop eb1e573은 사용자 push 후 원격 일치가 확인됐으며 이번 변경은 아직 커밋/push하지 않았다.
+
+메뉴 UX 보완: index.html의 workspace-nav 순서는 writing-room → library → template-gallery → template-studio로 실제 DOM과 일치한다. writing-room은 자료 입력부터 편집/검토를 포함한다. app.js updateNavigation이 viewport 위치 기준 강조·aria-current·상단 current-location을 갱신한다. 네이티브 앵커/해시/브라우저 이력을 유지하며 모바일 sticky 높이를 scroll-margin에 반영한다. 메뉴 확장 시 본문 구역 및 check_navigation_ui.py도 함께 검토한다.

@@ -26,15 +26,23 @@ class Workspace:
     def save(self, article: Article):
         key = uuid4().hex
         article = replace(article, article_id=article.article_id or key, saved_at=datetime.now(timezone.utc).isoformat())
-        export_article(article, self.root / key, ManualExportPublisher())
+        from .documents import from_markdown
+        photos = [b for b in from_markdown(article.markdown) if b['type']=='image']
+        if photos:
+            reminders = ['사진의 사용 권한·대체 설명·캡션·출처를 게시 전에 확인하세요.']
+            if any(not b.get('source') for b in photos): reminders.append('출처 주소가 비어 있는 사진이 있습니다.')
+            article = replace(article, warnings=tuple(dict.fromkeys((*article.warnings,*reminders))))
+        export_article(article, self.root / key, ManualExportPublisher(), media_root=self.root)
         return self.response(key, article)
 
     def response(self, key, article):
+        from .media import embedded
+        images = embedded(self.root, article.markdown)
         return {'id': key, 'title': article.title, 'markdown': article.markdown,
                 'warnings': list(article.warnings), 'source_count': len(article.sources),
-                'blocks':from_markdown(article.markdown), 'style':article.style,'appearance':article.appearance, 'template_id':article.template_version,
+                'images':images, 'blocks':from_markdown(article.markdown), 'style':article.style,'appearance':article.appearance, 'template_id':article.template_version,
                 'article_id':article.article_id or key,'parent_id':article.parent_id,'saved_at':article.saved_at,
-                'html': preview_document(article.title, article.markdown, article.warnings, show_notices=False,style=article.style,appearance=article.appearance)}
+                'html': preview_document(article.title, article.markdown, article.warnings, show_notices=False,style=article.style,appearance=article.appearance,images=images)}
 
     def load(self, key):
         if len(key) != 32 or any(c not in '0123456789abcdef' for c in key):

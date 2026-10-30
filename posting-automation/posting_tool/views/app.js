@@ -5,6 +5,7 @@ let mode='plain', blocks=[], rawMode=false, templateKey=null, templateDirty=fals
 const status = (message, error = false) => { $('status').textContent = message; $('status').classList.toggle('error', error); };
 function updateControls() {
   $('prepare').disabled = !(mode==='plain' ? $('plain-text').value.trim() : files.length) || busy;
+  $('add-image').disabled=!current || rawMode || busy;
   $('apply-template').disabled=!current || dirty || busy;
   for(const id of ['save-template','clone-template','preview-template','new-template','refresh-library']) $(id).disabled=busy;
   $('example').disabled = busy;
@@ -167,7 +168,7 @@ $('apply').onclick = () => run(async () => {
 $('reviewed').onchange = () => {delivered=false; updateControls();};
 for(const id of ['download-md','download-html','download-zip']) $(id).addEventListener('click', () => { if(current && !dirty && $('reviewed').checked) {delivered=true; updateControls();} });
 $('copy').onclick = async () => {
-  try { await navigator.clipboard.writeText(current.blocks.map(b=>b.type==='list'?b.text.split('\n').map(x=>'• '+x).join('\n'):b.type==='divider'?'────────':b.text).join('\n\n')); delivered=true; updateControls(); status('일반 본문을 복사했습니다. 붙여넣은 뒤 플랫폼 서식을 확인해 주세요.'); }
+  try { await navigator.clipboard.writeText(current.blocks.map(b=>b.type==='image'?`[사진: ${b.text}]\n${b.caption||''}\n${b.source||''}`:b.type==='list'?b.text.split('\n').map(x=>'• '+x).join('\n'):b.type==='divider'?'────────':b.text).join('\n\n')); delivered=true; updateControls(); status('일반 본문을 복사했습니다. 붙여넣은 뒤 플랫폼 서식을 확인해 주세요.'); }
   catch { status('클립보드 접근이 제한됐습니다. 원고 영역을 직접 선택하거나 Markdown 파일을 받아 주세요.',true); }
 };
 window.addEventListener('beforeunload', event => { if(dirty || sourceDirty || templateDirty) {event.preventDefault(); event.returnValue='';} });
@@ -197,13 +198,15 @@ $('plain-mode').onclick=()=>setMode('plain'); $('file-mode').onclick=()=>setMode
 $('plain-text').addEventListener('input',()=>{sourceDirty=true; updateControls();});
 function renderBlocks() {
   $('blocks').replaceChildren();
-  const names={title:'큰 제목',heading:'소제목',subheading:'작은 소제목',paragraph:'본문',list:'목록',divider:'구분선'};
+  const names={title:'큰 제목',heading:'소제목',subheading:'작은 소제목',paragraph:'본문',list:'목록',divider:'구분선',image:'사진'};
   blocks.forEach((block,index)=>{
     const box=document.createElement('div');box.className='document-block '+block.type;
     const tools=document.createElement('div');tools.className='block-tools';
     const select=document.createElement('select');select.setAttribute('aria-label',`${index+1}번 문단 유형`);
     for(const [type,label] of Object.entries(names)) {const option=document.createElement('option');option.value=type;option.textContent=label;select.append(option);}
     select.value=block.type;
+    if(block.type==='image') select.disabled=true;
+    else select.querySelector('option[value="image"]').remove();
     select.onchange=()=>{block.type=select.value;if(['title','heading','subheading'].includes(block.type)) block.text=block.text.replace(/\n/g,' ');markDirty();renderBlocks();};
     tools.append(select);
     for(const [label,action] of [['↑',()=>{if(index>0) [blocks[index-1],blocks[index]]=[blocks[index],blocks[index-1]];}],['↓',()=>{if(index<blocks.length-1) [blocks[index+1],blocks[index]]=[blocks[index],blocks[index+1]];}],['삭제',()=>{blocks.splice(index,1);}]]) {
@@ -211,15 +214,35 @@ function renderBlocks() {
       button.onclick=()=>{action();markDirty();renderBlocks();};tools.append(button);
     }
     box.append(tools);
-    if(block.type==='divider') {const hr=document.createElement('hr');box.append(hr);}
+    if(block.type==='image') {
+      const image=document.createElement('img');image.src=current.images?.[block.src]||'';image.alt=block.text;image.style.maxWidth='100%';box.append(image);
+      for(const [key,label] of [['text','사진 대체 설명'],['caption','사진 캡션'],['source','사진 출처 URL']]) {
+        const wrapper=document.createElement('label');wrapper.textContent=label;
+        const field=document.createElement('input');field.value=block[key]||'';field.maxLength=1000;field.setAttribute('aria-label',`${index+1}번 ${label}`);
+        field.oninput=()=>{block[key]=field.value;markDirty();};wrapper.append(field);box.append(wrapper);
+      }
+    }
+    else if(block.type==='divider') {const hr=document.createElement('hr');box.append(hr);}
     else {const field=document.createElement('textarea');field.value=block.text;field.rows=['title','heading','subheading'].includes(block.type)?1:Math.max(3,Math.min(10,block.text.split('\n').length+1));field.setAttribute('aria-label',`${index+1}번 ${names[block.type]}`);field.placeholder='내용을 입력하세요';field.oninput=()=>{block.text=field.value;markDirty();};box.append(field);}
     $('blocks').append(box);
   });
 }
+$('add-image').onclick=()=>$('image-file').click();
+$('image-file').onchange=()=>run(async()=>{
+  const file=$('image-file').files[0];if(!file)return;
+  try {
+    if(file.size>700000)throw new Error('사진은 700KB 이하로 줄여 주세요.');
+    const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('사진을 읽지 못했습니다.'));reader.readAsDataURL(file);});
+    const result=await api('/api/media',{content:data.split(',')[1]});
+    current.images={...(current.images||{}),[result.src]:data};
+    blocks.push({type:'image',text:file.name.replace(/[\[\]\r\n]/g,''),src:result.src,caption:'',source:''});
+    renderBlocks();markDirty();status('사진을 추가했습니다. 캡션과 출처를 입력하고 편집 내용을 저장하세요.');
+  } finally {$('image-file').value='';}
+});
 $('add-block').onclick=()=>{blocks.push({type:'paragraph',text:''});renderBlocks();markDirty();$('blocks').lastElementChild.querySelector('textarea').focus();};
 function blocksMarkdown() {
   const prefix={title:'# ',heading:'## ',subheading:'### '};
-  return blocks.map(b=>b.type==='divider'?'---':b.type==='list'?b.text.split('\n').filter(x=>x.trim()).map(x=>'- '+x.replace(/^[-•· ]+/, '')).join('\n'):(prefix[b.type]||'')+b.text).join('\n\n');
+  return blocks.map(b=>b.type==='image'?`![${b.text}](${b.src})\n사진 설명: ${b.caption||''}\n사진 출처: ${b.source||''}`:b.type==='divider'?'---':b.type==='list'?b.text.split('\n').filter(x=>x.trim()).map(x=>'- '+x.replace(/^[-•· ]+/, '')).join('\n'):(prefix[b.type]||'')+b.text).join('\n\n');
 }
 $('toggle-editor').onclick=()=>run(async()=>{
   if(rawMode) {blocks=(await api('/api/document-blocks',{markdown:$('markdown').value})).blocks;renderBlocks();}
@@ -334,3 +357,42 @@ function showDesign(value) {
   for(const [key,id] of Object.entries(designFields))$(id).value=value[key]??defaults[key];
 }
 for(const id of ['design-enabled',...Object.values(designFields)]) $(id).addEventListener('input',()=>{templateDirty=true;scheduleStudioPreview();});
+
+
+// Navigation describes document locations; editing progress is a separate state.
+const workspaceLinks = [...document.querySelectorAll('.workspace-nav a[href^="#"]')];
+const workspaceSections = workspaceLinks.map(link => document.querySelector(link.getAttribute('href')));
+function navigationOffset() {
+  return matchMedia('(max-width:760px)').matches ? document.querySelector('.sidebar').getBoundingClientRect().height + 16 : 24;
+}
+function updateNavigation() {
+  const offset = navigationOffset();
+  document.documentElement.style.setProperty('--navigation-offset', `${offset}px`);
+  let currentIndex = 0;
+  workspaceSections.forEach((section, index) => {
+    if(section.getBoundingClientRect().top <= offset + 48) currentIndex = index;
+  });
+  workspaceLinks.forEach((link, index) => {
+    link.classList.toggle('active', index === currentIndex);
+    if(index === currentIndex) link.setAttribute('aria-current', 'location');
+    else link.removeAttribute('aria-current');
+  });
+  $('current-location').textContent = workspaceLinks[currentIndex].dataset.label;
+}
+let navigationFrame = null;
+function scheduleNavigation() {
+  if(navigationFrame !== null) return;
+  navigationFrame = requestAnimationFrame(() => {navigationFrame = null; updateNavigation();});
+}
+workspaceLinks.forEach((link, index) => {
+  link.addEventListener('click', () => {
+    // Native anchors preserve deep links and Back/Forward, including keyboard activation.
+    workspaceSections[index].focus({preventScroll:true});
+    scheduleNavigation();
+  });
+});
+addEventListener('scroll', scheduleNavigation, {passive:true});
+addEventListener('resize', scheduleNavigation);
+addEventListener('hashchange', scheduleNavigation);
+new ResizeObserver(scheduleNavigation).observe(document.querySelector('main'));
+updateNavigation();

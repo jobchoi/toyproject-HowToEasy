@@ -1,7 +1,8 @@
 """Plain text / small Markdown subset to user-editable document blocks."""
 import re
+from .media import IMAGE, validate_image, image_markdown
 
-TYPES = {'title', 'heading', 'subheading', 'paragraph', 'list', 'divider'}
+TYPES = {'title', 'heading', 'subheading', 'paragraph', 'list', 'divider', 'image'}
 
 
 def validate_blocks(blocks):
@@ -11,6 +12,9 @@ def validate_blocks(blocks):
     for block in blocks:
         if not isinstance(block, dict) or block.get('type') not in TYPES or not isinstance(block.get('text'), str):
             raise ValueError('문서 블록 형식을 확인하세요.')
+        if block['type'] == 'image':
+            result.append(validate_image(block))
+            continue
         text = block['text'].strip()
         if block['type'] in {'title', 'heading', 'subheading'} and '\n' in text:
             raise ValueError('제목 블록에는 줄바꿈을 사용할 수 없습니다.')
@@ -25,7 +29,9 @@ def to_markdown(blocks):
     output = []
     for block in validate_blocks(blocks):
         kind, text = block['type'], block['text']
-        if kind == 'divider':
+        if kind == 'image':
+            output.append(image_markdown(block))
+        elif kind == 'divider':
             output.append('---')
         elif kind == 'list':
             output.append('\n'.join('- '+line.lstrip('-•· ').strip() for line in text.splitlines() if line.strip()))
@@ -44,7 +50,19 @@ def from_markdown(markdown):
         if pending:
             blocks.append({'type':'paragraph','text':'\n'.join(pending)})
             pending.clear()
-    for line in markdown.splitlines():
+    lines = iter(markdown.splitlines())
+    for line in lines:
+        image = IMAGE.fullmatch(line)
+        if image:
+            flush()
+            block = {'type':'image', 'text':image[1], 'src':image[2], 'caption':'', 'source':''}
+            # Our serialized image always has two metadata lines; plain Markdown images remain valid.
+            blocks.append(block)
+            continue
+        if blocks and blocks[-1]['type'] == 'image' and line.startswith('사진 설명: '):
+            blocks[-1]['caption'] = line[len('사진 설명: '):]; continue
+        if blocks and blocks[-1]['type'] == 'image' and line.startswith('사진 출처: '):
+            blocks[-1]['source'] = line[len('사진 출처: '):]; continue
         heading = re.match(r'^(#{1,6})\s+(.+)$',line)
         bullet = re.match(r'^[-*]\s+(.+)$',line)
         if heading:

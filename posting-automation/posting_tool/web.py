@@ -39,7 +39,7 @@ def create_app(workspace=None):
         response = await call_next(request)
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['Cache-Control'] = 'no-store'
-        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' about:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-src 'self' about:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
         return response
 
     async def body(request):
@@ -73,6 +73,13 @@ def create_app(workspace=None):
     def example():
         return {'files': [{'name': p.name, 'content': p.read_text(encoding='utf-8')} for p in sorted((ROOT / 'examples/source-bundle').iterdir()) if p.suffix in {'.md', '.txt'}]}
 
+    @app.post('/api/media')
+    async def upload_media(request: Request):
+        data = await body(request)
+        from .media import upload
+        try: return upload(store.root, data.get('content'))
+        except ValueError as exc: raise HTTPException(400, str(exc)) from None
+
     @app.post('/api/jobs',status_code=202)
     async def start_job(request: Request):
         data=await body(request)
@@ -89,6 +96,7 @@ def create_app(workspace=None):
         data=await body(request)
         try:
             from .documents import from_plain,to_markdown,from_markdown
+            from .media import embedded
             from .rendering import preview_document
             template=store.templates.get(data.get('template_id'))
             if isinstance(data.get('text'),str) and data['text'].strip():blocks=from_plain(data['text'])
@@ -97,7 +105,7 @@ def create_app(workspace=None):
                 blocks=from_markdown(data['markdown'])
             else:blocks=from_plain('여기에 작성한 자료가 배치됩니다. 선택한 디자인과 단락 구성을 확인하세요.')
             blocks,warnings=store.templates.apply(blocks,template)
-            return {'html':preview_document(template['name'],to_markdown(blocks),tuple(warnings),show_notices=False,style=template.get('style','plain'),appearance=template.get('appearance',{})),'name':template['name']}
+            return {'html':preview_document(template['name'],to_markdown(blocks),tuple(warnings),show_notices=False,style=template.get('style','plain'),appearance=template.get('appearance',{}),images=embedded(store.root,to_markdown(blocks))),'name':template['name']}
         except FileNotFoundError:raise HTTPException(404,'템플릿을 찾을 수 없습니다.') from None
         except ValueError as exc:raise HTTPException(400,str(exc)) from None
 
@@ -223,6 +231,9 @@ def create_app(workspace=None):
             buffer = BytesIO()
             with ZipFile(buffer, 'w', ZIP_DEFLATED) as archive:
                 for filename in sorted(DOWNLOADS):
+                    archive.write(store.root / key / filename, filename)
+                from .media import references
+                for filename in sorted(references(store.load(key).markdown)):
                     archive.write(store.root / key / filename, filename)
             return Response(buffer.getvalue(), media_type='application/zip', headers={'Content-Disposition': 'attachment; filename="posting-bundle.zip"'})
         if name not in DOWNLOADS:
