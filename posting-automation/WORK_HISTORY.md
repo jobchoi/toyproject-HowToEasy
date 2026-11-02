@@ -117,3 +117,9 @@ Tailscale 명시적 호스트/loopback HTTPS 프록시 설정, 읽기 전용 서
 사용자 서버 prepare/backup verified/start/stop/start/confirm 로그로 ARM 컨테이너 실행·재시작 성공을 확인했다. 화면/사진/재부팅/서버 밖 백업은 별도 확인으로 남겼다. 현재 원고 백업 명령(대상 앱만 정지·실제 임시 복원·해시 검증·기존 실행상태 재개), 관리 실행기의 managed repo 전환과 이전 실행기 보존, File Browser 비밀값 제외 health 진단을 추가했다. 실패 시 재개 시도와 재개 실패 상태, Docker 원시 오류/명령 인자 제외를 검증했다.
 
 전체 52개 테스트 통과 후 백업 형식 오류 변환을 보완했으며 신규 운영 테스트 6개 재검증 통과. 실제 백업 파일 복원은 임시 폴더에서 검증했고 컨테이너 제어/inspect는 모의 호출이다. 새 운영 명령의 실제 라즈서버 적용 및 File Browser 원인 진단은 후속 실행이 필요하다. 기존 서비스·Tailscale·원본 경로를 직접 변경하지 않았다.
+
+## File Browser 검사 실패 수정 도구
+
+사용자 결과에서 실제 HTTP/컨테이너 loopback wget 검사는 성공하고 기존 스크립트만 실패, address/port 조회 null임을 확인했다. 앱 바인딩 설정을 바꾸지 않고 검증한 loopback endpoint만 검사하는 repair-filebrowser 계획/apply를 추가했다. 실제 Compose label/현재 이미지 ID/원본 파일/마운트를 확인하고 image·healthcheck 외 변경/경로 드리프트는 거부한다. 적용 시 대상 컨테이너만 중지, 설정/DB/Compose 백업·해시 대조 후 현재 이미지 고정/no-deps/no-build/pull never로 재생성하며 마운트 동일성과 healthy를 확인한다. 원본 설정·자료·다른 서비스는 변경하지 않는다. 후속 재생성 시 사용할 override와 수정 상태를 등록표 및 프로젝트 이력에 남긴다.
+
+전체 57개 테스트 통과, 이미 healthy인 경우 무변경 검사를 추가한 후 수정 도구 테스트 4개 재통과. Docker 명령은 개발 환경에서 모의 검사이며 실제 라즈 적용은 사용자 실행으로 남는다. 기존 서비스 데이터 폴더 이관/삭제는 수행하지 않았다.

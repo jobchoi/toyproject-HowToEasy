@@ -236,12 +236,16 @@ def main():
     posting.add_argument('--apply',action='store_true')
     handoff = sub.add_parser('use-managed'); handoff.add_argument('--apply',action='store_true')
     sub.add_parser('diagnose-filebrowser')
+    fix = sub.add_parser('repair-filebrowser'); fix.add_argument('--apply',action='store_true')
     args = parser.parse_args(); log = None
     try:
         root = safe_path(args.root)
         log = Log(args.log_dir); print('로그: '+str(log.path),flush=True)
         log.event('START',args.action+' / '+str(root))
-        if args.action == 'use-managed':
+        if args.action == 'repair-filebrowser':
+            from filebrowser_repair import repair
+            repair(root,args.apply,log); result = 0
+        elif args.action == 'use-managed':
             from server_maintenance import use_managed
             use_managed(root,args.apply,log); result = 0
         elif args.action == 'diagnose-filebrowser':

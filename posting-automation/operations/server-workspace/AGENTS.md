@@ -35,3 +35,7 @@
 - 실패 후 재실행할 때 이미 생성한 파일과 기존 서비스 상태를 보존한다. 불완전한 등록/부분 이관은 숨기지 않는다.
 - 완료 기록은 변경 대상·검증 결과·남은 미확인·백업/복구 위치를 프로젝트 MIGRATION.md 및 최상위 작업 이력에 기록한다.
 - status/doctor 출력은 점검 결과이며 백업·복구·접속 성공을 대신하지 않는다.
+
+## 기존 서비스의 부분 수정
+
+projects.json에 legacy_compose_overrides가 있으면 원본 Compose와 함께 적용해야 한다. 부분 수정으로 생긴 override를 무시해 재생성하지 않는다. File Browser health 수정은 현재 이미지 ID 고정 및 기존 mount 유지가 전제이며 설정/DB/공유 파일은 이관하지 않는다. 별도 이관 검증 전 registered_not_migrated를 완료로 바꾸지 않는다.

@@ -345,3 +345,12 @@
 - [ ] 실제 화면·사진·편집·내보내기 검토 결과 별도 확인 (confirm 명령 로그와 구분)
 - [ ] 재부팅 후 Docker 자동 복구·서버 밖 백업 사본 확인
 - [ ] 파일브라우저 진단 결과에 따라 원인 확인 후 개별 수정/이관
+
+## File Browser 상태 검사 수정 준비
+
+- [x] 사용자 HTTP 200·loopback wget 0·기존 healthcheck 1·address/port null 결과 기록
+- [x] 원본 앱 설정 대신 검증한 loopback healthcheck만 적용하는 계획/apply 명령
+- [x] 실제 서비스 label/Compose/mount 점검·원본 설정/DB 백업·현재 이미지 고정·대상 서비스만 재생성
+- [x] 설정 변경 범위/마운트 드리프트/기존 자료 보존·실패 상태·다른 서비스 유지 모의 테스트
+- [ ] 라즈서버 apply 후 healthy·웹 기능·익명 볼륨 유지 확인
+- [ ] 정상화 후 File Browser 실제 디렉터리 이관 계획 수립

@@ -117,3 +117,5 @@ cat /실제로/출력된/로그.jsonl
 ## 이관 완료 후
 
 사용자 서버에서 포스팅 실행/재시작/confirm 로그를 확인했다. [이관 후 운영](../../docs/POST_MIGRATION_OPERATIONS.md)에 따라 posting backup, use-managed, diagnose-filebrowser를 사용할 수 있다. backup은 잠시 대상 앱만 중지한 뒤 복원 검증·재개하며 명시적 --apply가 필요하다. 관리 코드 전환 후에는 원래 apps 폴더가 아닌 web-server 아래 repo를 갱신한다. File Browser 원시 health 오류/명령 인자는 로그에 노출하지 않는다.
+
+File Browser가 응답하지만 기존 검사 스크립트만 실패하는 경우 [healthcheck 수정 절차](../../docs/FILEBROWSER_HEALTH_REPAIR.md)를 참고한다. repair-filebrowser는 기본 계획이며 --apply 시 대상 컨테이너만 잠시 재생성한다. 원본 설정과 자료는 유지하고 후속 운영에 필요한 Compose override를 등록한다.
