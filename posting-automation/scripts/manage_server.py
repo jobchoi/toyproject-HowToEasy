@@ -236,13 +236,18 @@ def main():
     posting.add_argument('--apply',action='store_true')
     handoff = sub.add_parser('use-managed'); handoff.add_argument('--apply',action='store_true')
     sub.add_parser('diagnose-filebrowser')
+    for action in ('migrate-filebrowser','rollback-filebrowser'):
+        migration = sub.add_parser(action); migration.add_argument('--apply',action='store_true')
     fix = sub.add_parser('repair-filebrowser'); fix.add_argument('--apply',action='store_true')
     args = parser.parse_args(); log = None
     try:
         root = safe_path(args.root)
         log = Log(args.log_dir); print('로그: '+str(log.path),flush=True)
         log.event('START',args.action+' / '+str(root))
-        if args.action == 'repair-filebrowser':
+        if args.action in ('migrate-filebrowser','rollback-filebrowser'):
+            from filebrowser_migrate import operate
+            operate(root,args.apply,log,rollback=args.action=='rollback-filebrowser'); result = 0
+        elif args.action == 'repair-filebrowser':
             from filebrowser_repair import repair
             repair(root,args.apply,log); result = 0
         elif args.action == 'use-managed':

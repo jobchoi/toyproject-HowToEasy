@@ -341,7 +341,7 @@
 - [x] posting backup: 현재 data/ui 백업·임시 복원/해시 검사·실행 중 앱만 정지 후 재개·실패 시 복구 상태 기록
 - [x] use-managed: 관리 실행기를 web-server 아래 repo로 전환, 기존 실행기 백업·기본 계획/명시적 apply
 - [x] diagnose-filebrowser: 상태/검사 실행 파일·종료 코드만 조회, 원시 오류/인자/환경값 제외
-- [ ] 라즈서버에서 신규 백업·관리 경로 전환·파일브라우저 진단 실제 실행 확인
+- [x] 관리 경로 전환 사용자 로그 및 원격 진단 확인, 에이전트 신규 백업·복원/해시 검증·healthy 재개 확인
 - [ ] 실제 화면·사진·편집·내보내기 검토 결과 별도 확인 (confirm 명령 로그와 구분)
 - [ ] 재부팅 후 Docker 자동 복구·서버 밖 백업 사본 확인
 - [ ] 파일브라우저 진단 결과에 따라 원인 확인 후 개별 수정/이관
@@ -362,7 +362,35 @@
 - [x] 원격 분리 작업자·작업 ID 중복 실행 방지·unknown/running 결과 조회
 - [x] 로컬 report.md/result.json/관리 JSONL 수집·문제 요약·errors-only
 - [x] 로컬 모의 원격 작업/SSH 인자/인증 실패 보고서/접속 프로세스 종료 후 작업 지속 검사
-- [ ] 실제 실행 환경의 GitHub push 인증 및 라즈 SSH 키 인증 준비
-- [ ] 실제 SSH 왕복·원격 repair·연결 중단 후 collect 현장 검증
+- [x] 사용자 터미널 GitHub push·라즈 SSH 키 인증 및 에이전트 SSH 접속 확인
+- [x] 실제 SSH 왕복·원격 File Browser repair 및 healthy/doctor 0 보고서 확인
+- [ ] 실제 SSH 연결 중단 후 collect 현장 검증
 
-현재 도구 환경: git push는 HTTPS 사용자명 인증 부재, SSH BatchMode는 publickey/password 인증 거부로 실패. 인증 문제를 자동 승인 거부나 코드 오류로 기록하지 않는다.
+현재 인증 상태: 사용자 터미널에서 push/sync 성공, 에이전트 환경에서 SSH posting-backup 성공. 에이전트 GitHub 인증은 별도 미검증이다.
+
+## 2026-11-02 실제 원격 운영 검증
+
+- [x] File Browser repair 작업 10b82d2b375d44098c17c2e35ad66995: 설정/DB/Compose 백업, 마운트 검사, healthy 및 doctor 0 확인
+- [x] posting-backup 작업 7c31ba9d8b6e456da5f62a75ee78817a: 에이전트 SSH 실행, 실제 백업/복원 해시 검사, 서비스 healthy 재개
+- [ ] File Browser 로그인/목록/파일 열기 사용자 확인
+- [ ] File Browser 데이터/익명 볼륨/공유 경로 의존성 조사 후 개별 이전 계획 확정
+
+File Browser 상태 검사 수정은 디렉터리 이전 완료와 구분한다. 기존 my-server와 Tailscale 매핑은 유지한다.
+
+- [x] 사용자 승인 후 최신 포스팅 백업과 검증 메타데이터를 WSL `.local/server-backups/20261102-120055/`에 복사, 두 파일의 서버/로컬 SHA-256 일치 및 Git 제외 확인
+
+## FileBrowser 이관 사전 조사 (실제 SSH)
+
+- [x] 실제 mount/포트/네트워크/동일 Compose 서비스/경로 겹침 조사
+- [x] Nginx 연결 참조 유무, 익명 볼륨 루트 항목, 공유 폴더 크기/링크/가용 공간 확인
+- [x] 운영 Compose 분리 → 데이터 이동의 2단계 계획 작성 (`docs/FILEBROWSER_MIGRATION_PLAN.md`)
+- [ ] 독립 Compose 생성/비교·전체 백업 복원/권한 검증·실패 시 복귀 도구 구현
+- [ ] 대상 서비스만 전환 및 실제 웹 기능 확인 (현재 기존 서비스 유지)
+
+## FileBrowser 독립 운영 도구
+
+- [x] 단일 서비스 Compose, 현재 이미지/외부 볼륨/네트워크 고정·기존 bind 유지
+- [x] 정지 상태 마운트 tar 백업·실제 임시 복원/파일 해시·모드 검증
+- [x] 기존 컨테이너 rename 보존·전환 실패 복귀·명시적 rollback
+- [x] 원격 migrate/rollback workflow 및 apply 전달 테스트
+- [ ] 실제 라즈 전환·웹 기능 검토 및 데이터 경로 정리

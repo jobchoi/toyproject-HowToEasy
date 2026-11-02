@@ -89,3 +89,14 @@ python3 scripts/remote_server.py --host raspberry-posting --collect 실제_32자
 --collect는 push/sync/apply와 함께 쓰지 않는다. 완료 후 결과를 다시 받을 수 있고, 작업자가 살아 있으면 running, 완료 여부를 확정할 수 없으면 unknown을 반환한다. 새 작업 ID를 만들어 같은 변경을 즉시 반복하지 않는다. 로그/실제 서비스 상태를 확인한 뒤 후속 조치를 정한다.
 
 환경에 따라 에이전트의 네트워크 실행 승인 절차는 별도로 적용될 수 있다. SSH 키 등록이 플랫폼 권한 절차를 우회하지는 않는다. Slack/메일 통보나 자동 스케줄 등록은 포함하지 않는다. 출력과 보고서를 에이전트가 읽고 분석하는 흐름까지 제공한다.
+
+## FileBrowser 독립 운영 제어 전환
+
+```bash
+python3 scripts/remote_server.py --host raspberry-posting --workflow migrate-filebrowser
+python3 scripts/remote_server.py --host raspberry-posting --workflow migrate-filebrowser --sync --apply
+# 실제 전환 후 문제 발생 시에만
+python3 scripts/remote_server.py --host raspberry-posting --workflow rollback-filebrowser --apply
+```
+
+기존 데이터 경로·익명 볼륨·공유 네트워크를 보존한다. 중지된 기존 컨테이너는 이름을 바꿔 보관하며 자동 삭제하지 않는다. 컨테이너 rename 후 새 서비스로 전환하기 전에 설정/DB/공유 폴더 tar를 실제 임시 복원해 파일 내용과 파일 모드를 검증한다. UID/GID는 tar 메타데이터에 보존하며 현재 데이터 소유자를 변경하지 않는다. 운영 제어 전환은 데이터 디렉터리 이동이나 실제 웹 로그인 검토 완료를 뜻하지 않는다. pending_review 중에는 기존 my-server Compose로 fileserver를 재생성하거나 down하지 않는다. 복귀도 대상 FileBrowser만 수행하며 볼륨을 삭제하지 않는다.

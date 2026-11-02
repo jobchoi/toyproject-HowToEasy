@@ -12,7 +12,7 @@ import remote_server as remote
 
 STUB = '''import argparse,json,uuid
 from pathlib import Path
-p=argparse.ArgumentParser(description='status posting doctor repair-filebrowser diagnose-filebrowser');p.add_argument('--root');p.add_argument('--log-dir');a,rest=p.parse_known_args()
+p=argparse.ArgumentParser(description='status posting doctor repair-filebrowser diagnose-filebrowser migrate-filebrowser rollback-filebrowser');p.add_argument('--root');p.add_argument('--log-dir');a,rest=p.parse_known_args()
 root=Path(a.root)
 with (root/'calls.jsonl').open('a') as f:f.write(json.dumps(rest)+'\\n')
 logs=Path(a.log_dir);logs.mkdir(exist_ok=True)
@@ -40,6 +40,14 @@ class RemoteOperationsTests(unittest.TestCase):
         self.assertEqual((self.root/'calls.jsonl').read_text().splitlines(),calls)
         with self.assertRaisesRegex(ValueError,'JOB_ID_CONFLICT'):job.run(self.root,identifier,'status')
         self.assertEqual(job.run(self.root,identifier,'status',collect=True)['state'],'succeeded')
+
+    def test_migration_apply_flags_reach_manager(self):
+        for workflow in ('migrate-filebrowser','rollback-filebrowser'):
+            result=job.run(self.root,uuid4().hex,workflow,True)
+            self.assertEqual(result['state'],'succeeded',result)
+        calls=[json.loads(line) for line in (self.root/'calls.jsonl').read_text().splitlines()]
+        self.assertIn(['migrate-filebrowser','--apply'],calls)
+        self.assertIn(['rollback-filebrowser','--apply'],calls)
 
     def test_dry_run_unknown_and_symlink_job_paths(self):
         identifier=uuid4().hex;job.run(self.root,identifier,'posting-backup',False)

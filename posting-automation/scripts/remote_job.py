@@ -16,9 +16,11 @@ WORKFLOWS = {
     'diagnose': [('posting','status'),('diagnose-filebrowser',),('doctor',)],
     'repair-filebrowser': [('repair-filebrowser',),('diagnose-filebrowser',),('doctor',)],
     'posting-backup': [('posting','backup'),('posting','status')],
+    'migrate-filebrowser': [('migrate-filebrowser',),('diagnose-filebrowser',),('doctor',)],
+    'rollback-filebrowser': [('rollback-filebrowser',),('diagnose-filebrowser',),('doctor',)],
     'sync-only': [],
 }
-MUTATING = {'repair-filebrowser', 'posting-backup'}
+MUTATING = {'repair-filebrowser', 'posting-backup','migrate-filebrowser','rollback-filebrowser'}
 
 
 def write_json(path, data):
@@ -120,12 +122,13 @@ def run(root,job_id,workflow,apply=False,sync=False,collect=False):
                         console.write('[SYNC_OK] managed repo fast-forward 완료\n');console.flush()
                     else: console.write('[DRY_RUN] repo 갱신은 --apply 필요\n');console.flush()
                 if WORKFLOWS[workflow]:
-                    help_result=subprocess.run([sys.executable,str(manager),'--help'],capture_output=True,text=True,timeout=15)
-                    if help_result.returncode or any(operation[0] not in help_result.stdout for operation in WORKFLOWS[workflow]):
-                        raise ValueError('REMOTE_CAPABILITY_MISSING')
+                    for operation in WORKFLOWS[workflow]:
+                        help_result=subprocess.run([sys.executable,str(manager),*operation,'--help'],capture_output=True,text=True,timeout=15)
+                        if help_result.returncode:
+                            raise ValueError('REMOTE_CAPABILITY_MISSING')
                 for operation in WORKFLOWS[workflow]:
                     arguments=list(operation)
-                    if apply and workflow in MUTATING and arguments in (['repair-filebrowser'],['posting','backup']): arguments.append('--apply')
+                    if apply and workflow in MUTATING and arguments in (['repair-filebrowser'],['posting','backup'],['migrate-filebrowser'],['rollback-filebrowser']): arguments.append('--apply')
                     command=[sys.executable,str(manager),'--root',str(root),'--log-dir',str(root/'logs'),*arguments]
                     console.write('[REMOTE_STEP] '+' '.join(operation)+'\n');console.flush()
                     step=subprocess.run(command,stdin=subprocess.DEVNULL,stdout=console,stderr=subprocess.DEVNULL,start_new_session=True)
