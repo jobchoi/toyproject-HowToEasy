@@ -17,7 +17,7 @@ def overlap(left, right):
     return a == b or a in b.parents or b in a.parents
 
 
-def inventory():
+def inventory(target_name="file-service"):
     template = '{"name":{{json .Name}},"image":{{json .Image}},"state":{{json .State.Status}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"service":{{json (index .Config.Labels "com.docker.compose.service")}},"files":{{json (index .Config.Labels "com.docker.compose.project.config_files")}},"working_dir":{{json (index .Config.Labels "com.docker.compose.project.working_dir")}},"mounts":{{json .Mounts}},"ports":{{json .HostConfig.PortBindings}},"networks":{{json .NetworkSettings.Networks}}}'
     ids = command(['docker', '--context', 'default', 'ps', '-aq']).split()
     containers = []
@@ -28,9 +28,9 @@ def inventory():
         data['networks'] = sorted(data['networks'])
         data['mounts'] = [{key: m.get(key) for key in ('Type', 'Name', 'Source', 'Destination', 'RW')} for m in data['mounts']]
         containers.append(data)
-    target = next((c for c in containers if c['name'] == 'file-service'), None)
+    target = next((c for c in containers if c['name'] == target_name), None)
     if target is None:
-        raise RuntimeError('FILEBROWSER_NOT_FOUND')
+        raise RuntimeError('TARGET_NOT_FOUND')
     shared = []
     for mount in target['mounts']:
         for other in containers:
@@ -67,7 +67,11 @@ def inventory():
 
 if __name__ == '__main__':
     try:
-        print(json.dumps(inventory(), ensure_ascii=False, indent=2))
+        import argparse
+        parser=argparse.ArgumentParser(description='읽기 전용 서비스 이관 의존성 조사')
+        parser.add_argument('--container',choices=('file-service','web-service','my-server-duct-tape-1'),default='file-service')
+        args=parser.parse_args()
+        print(json.dumps(inventory(args.container), ensure_ascii=False, indent=2))
     except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired):
         print(json.dumps({'error':'INVENTORY_FAILED'}))
         raise SystemExit(2)

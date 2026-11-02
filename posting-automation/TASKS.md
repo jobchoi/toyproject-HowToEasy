@@ -384,7 +384,7 @@ File Browser 상태 검사 수정은 디렉터리 이전 완료와 구분한다.
 - [x] 실제 mount/포트/네트워크/동일 Compose 서비스/경로 겹침 조사
 - [x] Nginx 연결 참조 유무, 익명 볼륨 루트 항목, 공유 폴더 크기/링크/가용 공간 확인
 - [x] 운영 Compose 분리 → 데이터 이동의 2단계 계획 작성 (`docs/FILEBROWSER_MIGRATION_PLAN.md`)
-- [ ] 독립 Compose 생성/비교·전체 백업 복원/권한 검증·실패 시 복귀 도구 구현
+- [x] 독립 Compose 생성/비교·마운트 tar 백업 실제 복원/파일 모드 검증·실패 시 복귀 도구 구현
 - [ ] 대상 서비스만 전환 및 실제 웹 기능 확인 (현재 기존 서비스 유지)
 
 ## FileBrowser 독립 운영 도구
@@ -393,4 +393,14 @@ File Browser 상태 검사 수정은 디렉터리 이전 완료와 구분한다.
 - [x] 정지 상태 마운트 tar 백업·실제 임시 복원/파일 해시·모드 검증
 - [x] 기존 컨테이너 rename 보존·전환 실패 복귀·명시적 rollback
 - [x] 원격 migrate/rollback workflow 및 apply 전달 테스트
-- [ ] 실제 라즈 전환·웹 기능 검토 및 데이터 경로 정리
+- [x] 실제 라즈 운영 제어 전환·백업/복원 검증·healthy 및 doctor 0
+- [ ] 웹 접속 경로 구성/로그인 검토 및 데이터 경로 정리
+
+## FileBrowser 실제 전환 및 접속 장애
+
+- [x] 작업 7bdee1d412f64fd695eab8fed09439b8 성공, 기존 컨테이너 정지 보존
+- [x] 사용자가 보고한 /filebrowser 404 원인 확인: DuctTape에 전달되는 미설정 경로
+- [x] FileBrowser 로컬 HTTP 200, 기존 Tailscale 443/8443 매핑 확인
+- [ ] 전용 10000 Serve 추가: 서버 설정 권한 부족으로 미실행, 사용자 sudo 1회 필요
+- [ ] 로그인·목록·파일 열기 확인 후 데이터 이동 및 다음 서비스 전환
+- [ ] 로컬 커밋 GitHub push (에이전트 HTTPS 인증 부재, 서버에는 코드 bundle 적용)

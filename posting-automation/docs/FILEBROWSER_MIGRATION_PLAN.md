@@ -41,3 +41,27 @@ ssh -o BatchMode=yes -o StrictHostKeyChecking=yes raspberry-posting \
 ```
 
 출력은 마운트/포트/Compose/공유 경로 등 운영 메타데이터다. 공개 저장소에 추가하지 않는다. 환경값·설정 내용·DB 내용은 출력하지 않는다.
+
+## 실제 전환 결과 (2026-11-02)
+
+- 커밋 `c2e64e9`를 Git bundle로 서버 develop에 fast-forward 적용했다. 에이전트 GitHub HTTPS 인증 실패로 origin push는 완료되지 않았다.
+- 계획 작업 `f5b16cb38900489b9f75c636f8b8c63b` 통과.
+- 적용 작업 `7bdee1d412f64fd695eab8fed09439b8` 성공: /config·/database·/srv 백업과 실제 복원 검증, 독립 Compose 시작, 기존 이미지·마운트·포트·실행 설정 유지, healthy 및 doctor 0.
+- 운영 정의: `~/web-server/filebrowser/compose.yaml`, 상태: `control_migrated_pending_review`. 데이터는 기존 경로다.
+- 이전 컨테이너 `file-service-before-debd693535`는 정지 상태로 보존한다. 복귀는 remote_server.py의 rollback-filebrowser workflow로 수행한다. 기존 my-server Compose 전체 실행/종료는 금지한다.
+- Nginx 추가 조사: 컨테이너 web-service, 서비스 webpage, 80번 포트, 기존 html bind, 다른 컨테이너와 마운트 겹침 없음. 아직 이전하지 않았다.
+
+### 웹 검토 중 발견한 접속 경로 문제
+
+사용자가 확인한 `https://raspberry-m5.tail1a38c1.ts.net/filebrowser`의 404는 DuctTape 응답이다. 실제 Serve는 443 → 8000(DuctTape), 8443 → 8010(포스팅)이며 /filebrowser 경로가 없다. FileBrowser의 로컬 8080 `/`, `/health`는 HTTP 200이다.
+
+기존 경로를 변경하지 않는 tailnet 전용 10000 포트 추가를 시도했으나 서버가 `Access denied: serve config denied`를 반환했다. jobchoi는 비대화형 sudo도 사용할 수 없어 라우팅 변경은 미실행이다. 변경 전 설정은 서버 `~/web-server/filebrowser/tailscale-before-10000.json`에 보관했다.
+
+서버 터미널에서 사용자가 한 번 실행할 명령:
+
+```bash
+sudo tailscale serve --bg --https=10000 http://127.0.0.1:8080
+tailscale serve status
+```
+
+그다음 Tailscale 연결된 PC에서 `https://raspberry-m5.tail1a38c1.ts.net:10000/`로 로그인/목록/파일 열기를 확인한다. 전용 포트 해제는 `sudo tailscale serve --https=10000 off`이며 전체 reset은 사용하지 않는다. 웹 검토 및 외부 경로 의존성 검증 전 데이터 이동/원본 삭제는 진행하지 않는다.

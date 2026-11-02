@@ -147,3 +147,9 @@ remote_server.py/remote_job.py는 허용된 workflow, 선택적 push/원격 fast
 ## FileBrowser 독립 운영 구현
 
 기존 bind/익명 볼륨/공유 네트워크를 유지하는 단일 Compose 생성, 정지 상태 tar 백업·실제 복원/해시/파일 모드 검증, 기존 컨테이너 rename 보존과 실패 복귀/명시적 rollback을 구현했다. 원고 앱과 DuctTape/Nginx를 건드리는 명령은 없다. 기본 계획 모드이며 실제 전환은 apply를 요구한다. 관련 테스트 12개 통과, HTTP 테스트가 제한 환경에서 멈춘 문제는 제한 밖 전체 실행에서 재현되지 않았고 73개 검사 완료(브라우저 opt-in 1개 제외)했다. 원격 apply 전달 테스트 추가 후 재검증한다. 실제 서버 적용 여부는 후속 결과로 기록한다.
+
+## 실제 FileBrowser 제어 분리와 접속 경로 장애
+
+커밋 c2e64e9 push는 에이전트 HTTPS 인증 부재로 실패했다. 기존 승인 범위의 코드 배포를 계속하기 위해 코드 전용 Git bundle을 전달하고 서버의 깨끗한 develop/c915505를 확인한 후 지정 커밋으로만 fast-forward했다. 실제 계획 검증 성공 후 작업 7bdee1d412f64fd695eab8fed09439b8로 FileBrowser 제어 분리·마운트 백업 실제 복원 검증·원본 컨테이너 정지 보존·healthy/doctor 0을 확인했다. 원격 workflow 회귀 9개도 통과했다.
+
+웹 검토 요청에 사용자가 /filebrowser 404를 보고했다. 서버 검사에서 해당 경로는 DuctTape로 전달되고 실제 FileBrowser 8080은 HTTP 200임을 확인했다. 독립 tailnet 10000 Serve 추가는 서버가 권한 부족으로 거절했고 sudo -n도 비밀번호를 요구해 라우팅은 변경되지 않았다. 이는 자동 승인 검토 거절이 아니라 서버 계정 권한 문제다. 기존 443/8443/Funnel은 유지했다. Nginx 읽기 전용 조사까지 진행했으며 웹 검토/접속 해결 전 추가 서비스 변경과 데이터 이동은 중단했다.
