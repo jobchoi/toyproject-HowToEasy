@@ -153,3 +153,22 @@ Markdown을 다른 곳으로 옮길 때는 assets 폴더도 함께 옮기세요.
 사진 출처 URL은 기록용이며 서버가 외부 주소로 접속하거나 사진을 다운로드하지 않습니다.
 
 서버에 여러 프로젝트가 섞여 있다면 먼저 [서버 구조 조사 안내](docs/SERVER_INVENTORY.md)를 참고해 `python3 scripts/audit_server.py`를 실행하세요. 별도 의존성 없이 디렉터리·Git·Docker·서비스·포트·Tailscale의 읽기 전용 보고서를 만듭니다. 조사 후에도 기존 서비스와 파일 배치는 유지됩니다.
+
+
+## 프로젝트별 서버 운영 관리
+
+서버 관리 기준은 **~/web-server/<프로젝트>/{repo,data,backups}**로 통일합니다.
+[운영 지침과 실행 방법](operations/server-workspace/README.md), [에이전트 공통 규칙](operations/server-workspace/AGENTS.md)을 참고하세요.
+
+```bash
+# 최신 저장소의 posting-automation 폴더에서 계획 확인
+python3 scripts/manage_server.py init
+# 디렉터리/지침/등록표만 생성, 기존 서비스·파일 위치는 유지
+python3 scripts/manage_server.py --log-dir "$HOME/web-server/logs" init --apply
+# 이후 관리 시작 위치
+cd ~/web-server
+./manage.sh status
+./manage.sh doctor
+```
+
+Compose·.env와 실제 데이터는 자동 이관하지 않습니다. 생성된 MIGRATION.md를 기반으로 백업·경로·서비스별 전환을 확인합니다. 기존 경로는 projects.json에 기록하고 아직 이관하지 않았음을 명시합니다.
