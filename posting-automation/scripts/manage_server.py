@@ -232,14 +232,22 @@ def main():
     prepare.add_argument('--hostname',required=True)
     prepare.add_argument('--apply',action='store_true')
     posting = sub.add_parser('posting')
-    posting.add_argument('operation',choices=('start','stop','status','confirm'))
+    posting.add_argument('operation',choices=('start','stop','status','confirm','backup'))
     posting.add_argument('--apply',action='store_true')
+    handoff = sub.add_parser('use-managed'); handoff.add_argument('--apply',action='store_true')
+    sub.add_parser('diagnose-filebrowser')
     args = parser.parse_args(); log = None
     try:
         root = safe_path(args.root)
         log = Log(args.log_dir); print('로그: '+str(log.path),flush=True)
         log.event('START',args.action+' / '+str(root))
-        if args.action == 'prepare-posting':
+        if args.action == 'use-managed':
+            from server_maintenance import use_managed
+            use_managed(root,args.apply,log); result = 0
+        elif args.action == 'diagnose-filebrowser':
+            from server_maintenance import diagnose_filebrowser
+            diagnose_filebrowser(log); result = 0
+        elif args.action == 'prepare-posting':
             from posting_deploy import prepare
             prepare(root,args.hostname,args.apply,log); result = 0
         elif args.action == 'posting':

@@ -62,6 +62,12 @@ def save_json(path, data):
 
 
 def backup_and_verify(data, archive, expected, log):
+    try: _backup_and_verify(data,archive,expected,log)
+    except tarfile.TarError:
+        raise ValueError('BACKUP_FORMAT: 백업 형식을 읽거나 복원할 수 없습니다.') from None
+
+
+def _backup_and_verify(data, archive, expected, log):
     with tarfile.open(archive,'x:gz') as tar: tar.add(data,arcname='ui')
     archive.chmod(0o600)
     with tempfile.TemporaryDirectory(prefix='posting-restore-',dir=archive.parent) as temporary:
@@ -175,7 +181,10 @@ def operate(root, action, log):
     command = ['docker','--context','default','compose','--env-file',str(base/'.env'),'-p','posting-automation','-f',str(base/'compose.yaml')]
     with lock(root):
         records = registry(root); value = records['projects']['posting-automation']
-        if action == 'start':
+        if action == 'backup':
+            from server_maintenance import backup_locked
+            backup_locked(root,base,command,records,log)
+        elif action == 'start':
             if value['status'] == 'prepared_not_started': ensure_stopped()
             run(command+['config','--quiet'],log,'COMPOSE_CONFIG')
             run(command+['up','-d','--build','--wait','--wait-timeout','90','web'],log,'COMPOSE_START',timeout=1800)

@@ -111,3 +111,9 @@ Tailscale 명시적 호스트/loopback HTTPS 프록시 설정, 읽기 전용 서
 사용자 이관 방법 요청에 맞춰 Dockerfile/.dockerignore/Compose 원본, prepare-posting 및 posting start/stop/status/confirm을 추가했다. 변경 명령은 명시적 apply이며 기존 앱 포트·Git·대상 경로·데이터 변경을 검사한다. 원본 저장소/원고는 삭제하지 않고 복사하며 백업 tar를 임시 경로에 실제 복원해 해시를 대조한다. 관리 로그·루트 및 프로젝트 이력을 기록한다. 컨테이너는 독립 프로젝트명, 운영 사용자, 단일 워커·loopback·로그 회전·상태 점검으로 구성했다. Linux host network를 사용해 기존 Tailscale loopback 프록시를 유지한다.
 
 전체 47개 테스트 통과, 마지막 경로/이력 기록 보완 후 이관 테스트 6개 재통과. 실제 Git clone/자료 복사/백업 복원은 임시 디렉터리에서 검증했으며 Docker 시작/중지/확인은 모의 명령이다. 개발 환경에 Docker 엔진이 없어 Compose config·이미지 빌드·ARM/Tailscale 실실행은 라즈서버 검증 단계로 남는다. 기존 DuctTape/Nginx/File Browser/443/8443 설정은 변경하지 않았다.
+
+## 포스팅 이관 후 운영 안정화
+
+사용자 서버 prepare/backup verified/start/stop/start/confirm 로그로 ARM 컨테이너 실행·재시작 성공을 확인했다. 화면/사진/재부팅/서버 밖 백업은 별도 확인으로 남겼다. 현재 원고 백업 명령(대상 앱만 정지·실제 임시 복원·해시 검증·기존 실행상태 재개), 관리 실행기의 managed repo 전환과 이전 실행기 보존, File Browser 비밀값 제외 health 진단을 추가했다. 실패 시 재개 시도와 재개 실패 상태, Docker 원시 오류/명령 인자 제외를 검증했다.
+
+전체 52개 테스트 통과 후 백업 형식 오류 변환을 보완했으며 신규 운영 테스트 6개 재검증 통과. 실제 백업 파일 복원은 임시 폴더에서 검증했고 컨테이너 제어/inspect는 모의 호출이다. 새 운영 명령의 실제 라즈서버 적용 및 File Browser 원인 진단은 후속 실행이 필요하다. 기존 서비스·Tailscale·원본 경로를 직접 변경하지 않았다.

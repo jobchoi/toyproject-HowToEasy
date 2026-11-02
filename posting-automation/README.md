@@ -174,3 +174,5 @@ cd ~/web-server
 Compose·.env와 실제 데이터는 자동 이관하지 않습니다. 생성된 MIGRATION.md를 기반으로 백업·경로·서비스별 전환을 확인합니다. 기존 경로는 projects.json에 기록하고 아직 이관하지 않았음을 명시합니다.
 
 포스팅 앱을 실제 Docker 운영으로 옮길 때는 [이관 실행 순서](docs/POSTING_DOCKER_MIGRATION.md)를 따르세요. prepare-posting은 코드/원고를 복사하고 백업 복원을 검증하며, posting start/stop/confirm은 --apply를 지정한 대상 서비스에만 적용합니다. 원본은 삭제하지 않습니다. 라즈 ARM 컨테이너 실실행은 현장 검증이 필요합니다.
+
+이관 후에는 [운영·업데이트·백업·기존 서비스 진단](docs/POST_MIGRATION_OPERATIONS.md)을 참고하세요. 관리 실행기를 새 repo로 전환하고 현재 data/ui를 백업할 수 있습니다. 기존 apps 폴더의 .local을 현재 Docker 원고 저장소와 혼동하지 마세요.

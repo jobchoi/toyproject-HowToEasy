@@ -113,3 +113,7 @@ cat /실제로/출력된/로그.jsonl
 ## 포스팅 실제 이관 지원 추가
 
 2026-11-02 후속: prepare-posting과 posting start/stop/status/confirm 명령을 추가했다. 기존 초기 등록 명령은 그대로이며, 실제 이관 명령은 명시적으로 실행해야 한다. 위 문서의 초기 도구 미지원 설명은 초기 등록 범위에 해당한다. 최신 상세 절차는 [포스팅 Docker 이관](../../docs/POSTING_DOCKER_MIGRATION.md)을 따른다. 기존 폴더를 임의로 이동하지 않는다.
+
+## 이관 완료 후
+
+사용자 서버에서 포스팅 실행/재시작/confirm 로그를 확인했다. [이관 후 운영](../../docs/POST_MIGRATION_OPERATIONS.md)에 따라 posting backup, use-managed, diagnose-filebrowser를 사용할 수 있다. backup은 잠시 대상 앱만 중지한 뒤 복원 검증·재개하며 명시적 --apply가 필요하다. 관리 코드 전환 후에는 원래 apps 폴더가 아닌 web-server 아래 repo를 갱신한다. File Browser 원시 health 오류/명령 인자는 로그에 노출하지 않는다.
