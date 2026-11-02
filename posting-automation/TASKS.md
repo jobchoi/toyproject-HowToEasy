@@ -354,3 +354,15 @@
 - [x] 설정 변경 범위/마운트 드리프트/기존 자료 보존·실패 상태·다른 서비스 유지 모의 테스트
 - [ ] 라즈서버 apply 후 healthy·웹 기능·익명 볼륨 유지 확인
 - [ ] 정상화 후 File Browser 실제 디렉터리 이관 계획 수립
+
+## SSH 실행 및 결과 회수 자동화
+
+- [x] 작업 PC 원격 workflow 실행기, 선택적 push/원격 fast-forward, 기본 계획/명시적 apply
+- [x] SSH 키/호스트키 검증 유지·비대화형 인증, 인증/명령 실패 구분
+- [x] 원격 분리 작업자·작업 ID 중복 실행 방지·unknown/running 결과 조회
+- [x] 로컬 report.md/result.json/관리 JSONL 수집·문제 요약·errors-only
+- [x] 로컬 모의 원격 작업/SSH 인자/인증 실패 보고서/접속 프로세스 종료 후 작업 지속 검사
+- [ ] 실제 실행 환경의 GitHub push 인증 및 라즈 SSH 키 인증 준비
+- [ ] 실제 SSH 왕복·원격 repair·연결 중단 후 collect 현장 검증
+
+현재 도구 환경: git push는 HTTPS 사용자명 인증 부재, SSH BatchMode는 publickey/password 인증 거부로 실패. 인증 문제를 자동 승인 거부나 코드 오류로 기록하지 않는다.

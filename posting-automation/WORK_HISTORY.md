@@ -123,3 +123,11 @@ Tailscale 명시적 호스트/loopback HTTPS 프록시 설정, 읽기 전용 서
 사용자 결과에서 실제 HTTP/컨테이너 loopback wget 검사는 성공하고 기존 스크립트만 실패, address/port 조회 null임을 확인했다. 앱 바인딩 설정을 바꾸지 않고 검증한 loopback endpoint만 검사하는 repair-filebrowser 계획/apply를 추가했다. 실제 Compose label/현재 이미지 ID/원본 파일/마운트를 확인하고 image·healthcheck 외 변경/경로 드리프트는 거부한다. 적용 시 대상 컨테이너만 중지, 설정/DB/Compose 백업·해시 대조 후 현재 이미지 고정/no-deps/no-build/pull never로 재생성하며 마운트 동일성과 healthy를 확인한다. 원본 설정·자료·다른 서비스는 변경하지 않는다. 후속 재생성 시 사용할 override와 수정 상태를 등록표 및 프로젝트 이력에 남긴다.
 
 전체 57개 테스트 통과, 이미 healthy인 경우 무변경 검사를 추가한 후 수정 도구 테스트 4개 재통과. Docker 명령은 개발 환경에서 모의 검사이며 실제 라즈 적용은 사용자 실행으로 남는다. 기존 서비스 데이터 폴더 이관/삭제는 수행하지 않았다.
+
+## SSH 실행·원격 결과 회수 자동화
+
+사용자가 push/SSH 관리/결과 파일 수집을 묶도록 요청했다. Git push 재시도는 HTTPS 사용자명 인증 부재로 실패, SSH BatchMode 읽기 전용 접속은 Permission denied(publickey,password)였다. 별도 비밀번호 저장이나 권한 우회 없이 인증 준비 필요 상태로 기록했다.
+
+remote_server.py/remote_job.py는 허용된 workflow, 선택적 push/원격 fast-forward, 명시적 apply, 분리 원격 작업자, 동일 작업 ID 중복 실행 차단과 collect를 제공한다. 결과 Markdown/JSON/관리 JSONL은 로컬에 자동 수집하며 문제만 요약 출력하는 옵션을 추가했다. Git raw 출력/환경값/비밀번호는 보고서에 넣지 않는다. 전체 65개 검사 통과 후 인증 오류 분류/종료 프로세스 감지를 보완하고 원격 자동화 테스트 8개 재통과. 실제 stdin payload 실행과 연결 부모 종료 후 결과 지속은 로컬 프로세스로 검증했다. 실제 SSH를 통한 원격 변경/연결 중단 복구는 인증 준비 후 현장 검증해야 한다.
+
+신규 실행기로 실제 SSH status 조회를 시험했고 인증 거부를 .local/remote-runs의 report.md/result.json/ssh.stderr.txt로 수집했다. 라즈서버 상태/자료 변경과 원격 수정은 수행되지 않았다. 로컬 커밋은 준비하지만 인증 상태가 바뀌지 않아 원격 push 완료로 기록하지 않는다.

@@ -39,3 +39,7 @@
 ## 기존 서비스의 부분 수정
 
 projects.json에 legacy_compose_overrides가 있으면 원본 Compose와 함께 적용해야 한다. 부분 수정으로 생긴 override를 무시해 재생성하지 않는다. File Browser health 수정은 현재 이미지 ID 고정 및 기존 mount 유지가 전제이며 설정/DB/공유 파일은 이관하지 않는다. 별도 이관 검증 전 registered_not_migrated를 완료로 바꾸지 않는다.
+
+## 원격 실행과 불확실한 결과
+
+remote_server.py를 통한 원격 작업은 ~/web-server/remote-runs/<작업ID>/에 결과를 남긴다. 결과가 unknown/running이면 동일 ID의 collect로 조회하고 새 ID로 변경 명령을 즉시 반복하지 않는다. 연결 종료는 원격 실패/취소를 뜻하지 않는다. 인증 실패를 우회하기 위해 비밀번호 저장, sshpass, 호스트키 검증 해제를 도입하지 않는다. 플랫폼의 실행 승인은 별도 경계다.
