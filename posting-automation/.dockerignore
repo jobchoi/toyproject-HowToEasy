@@ -1,0 +1,11 @@
+*
+!Dockerfile
+!requirements-ui.txt
+!posting_tool/
+!posting_tool/**
+!examples/
+!examples/**
+!TASKS.md
+**/__pycache__/
+**/*.pyc
+**/.env*

@@ -105,3 +105,9 @@ Tailscale 명시적 호스트/loopback HTTPS 프록시 설정, 읽기 전용 서
 - status/doctor 읽기 전용 점검, 에러 코드·UTC 시각·실행별 JSONL 로그·파일 600 권한. Docker 원시 stderr/환경값/원고는 기록하지 않음.
 - 신규 회귀 검사 6개 및 RUN_BROWSER_TESTS=1 전체 41개 통과. 임시 경로 실제 생성/등록/생성된 manage.sh 셸 문법 확인.
 - 라즈서버 적용·기존 코드/데이터 이동·Compose 운영 이관은 미실행. 먼저 최신 코드를 서버에 전달한 후 초기 구성 스크립트를 실행해야 함. 현재 변경은 커밋/push 전.
+
+## 포스팅 Docker 이관 실행 도구
+
+사용자 이관 방법 요청에 맞춰 Dockerfile/.dockerignore/Compose 원본, prepare-posting 및 posting start/stop/status/confirm을 추가했다. 변경 명령은 명시적 apply이며 기존 앱 포트·Git·대상 경로·데이터 변경을 검사한다. 원본 저장소/원고는 삭제하지 않고 복사하며 백업 tar를 임시 경로에 실제 복원해 해시를 대조한다. 관리 로그·루트 및 프로젝트 이력을 기록한다. 컨테이너는 독립 프로젝트명, 운영 사용자, 단일 워커·loopback·로그 회전·상태 점검으로 구성했다. Linux host network를 사용해 기존 Tailscale loopback 프록시를 유지한다.
+
+전체 47개 테스트 통과, 마지막 경로/이력 기록 보완 후 이관 테스트 6개 재통과. 실제 Git clone/자료 복사/백업 복원은 임시 디렉터리에서 검증했으며 Docker 시작/중지/확인은 모의 명령이다. 개발 환경에 Docker 엔진이 없어 Compose config·이미지 빌드·ARM/Tailscale 실실행은 라즈서버 검증 단계로 남는다. 기존 DuctTape/Nginx/File Browser/443/8443 설정은 변경하지 않았다.

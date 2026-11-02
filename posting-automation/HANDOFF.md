@@ -30,3 +30,6 @@
 
 
 2026-11-02 운영 정책 변경: 사용자가 관리 경로 분산을 피하고 ~/web-server/<프로젝트>/{repo,data,backups}에 모으도록 요청했다. operations/server-workspace/AGENTS.md가 서버 에이전트 지침 원본이며 루트 AGENTS.md도 이를 참조한다. scripts/manage_server.py는 init/add 계획 및 명시적 --apply로 프로젝트 폴더·README·MIGRATION·projects.json·WORK_HISTORY·manage.sh를 생성한다. 기존 코드/자료를 옮기지 않고 registered_not_migrated 상태로 실제 기존 경로를 등록한다. manage.sh는 원본 스크립트 경로를 호출하므로 실제 저장소 이동 때 참조를 갱신해야 한다. status/doctor는 읽기 전용 상태 점검, 코드별 JSONL 로그를 기록한다. 적용 로그는 --log-dir "$HOME/web-server/logs"로 영속 보관한다. 기존 폴더는 초기 등록만으로 이동/삭제하지 않는다. Docker 운영 구성·실제 서비스 이관은 여전히 후속 작업이다. 과거 분산 배치안에는 대체됨 표시를 추가했다.
+
+
+포스팅 이관 지원 추가: Dockerfile/.dockerignore와 deploy/compose.yaml을 canonical 정의로 추가. 관리 루트 compose는 extends 진입점, .env에 UID/GID/호스트/절대 코드·데이터 경로 저장. Linux host networking + Uvicorn 127.0.0.1:8010으로 Tailscale loopback proxy 신뢰를 유지한다. prepare-posting은 기존앱 정지·원본 Git 청결·충돌을 확인하고 로컬 clone, .local/ui 복사, tar 백업의 실제 임시 복원·해시 검증 후 prepared_not_started로 등록한다. posting start/stop/confirm은 --apply 필요, start는 healthcheck 후 running_pending_review, confirm은 사용자의 외부 검토 기록 후 migrated. 실제 Docker/ARM 실행은 아직 검증되지 않았다. 상세는 docs/POSTING_DOCKER_MIGRATION.md. 원본 ignored resources/브라우저 기록은 이전 위치에 남으므로 기존 폴더를 삭제하지 않는다.

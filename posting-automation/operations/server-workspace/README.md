@@ -109,3 +109,7 @@ cat /실제로/출력된/로그.jsonl
 7. 기존 DuctTape/File Browser/Nginx는 별도 검증 뒤 하나씩 이관.
 
 포스팅 실제 이관 전에는 기존 run_ui.sh와 원래 경로를 계속 사용한다. status/doctor는 앱 HTTP 접속·데이터 복원 검증을 대신하지 않는다. 기존 루트 /client 리다이렉트와 서버 디렉터리 구조는 별개이며 Tailscale 443/8443은 유지한다.
+
+## 포스팅 실제 이관 지원 추가
+
+2026-11-02 후속: prepare-posting과 posting start/stop/status/confirm 명령을 추가했다. 기존 초기 등록 명령은 그대로이며, 실제 이관 명령은 명시적으로 실행해야 한다. 위 문서의 초기 도구 미지원 설명은 초기 등록 범위에 해당한다. 최신 상세 절차는 [포스팅 Docker 이관](../../docs/POSTING_DOCKER_MIGRATION.md)을 따른다. 기존 폴더를 임의로 이동하지 않는다.

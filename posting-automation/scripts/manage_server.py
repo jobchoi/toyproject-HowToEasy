@@ -228,12 +228,28 @@ def main():
     init = sub.add_parser('init'); init.add_argument('--apply',action='store_true')
     add = sub.add_parser('add'); add.add_argument('name'); add.add_argument('--source',type=Path); add.add_argument('--apply',action='store_true')
     sub.add_parser('status'); sub.add_parser('doctor')
+    prepare = sub.add_parser('prepare-posting')
+    prepare.add_argument('--hostname',required=True)
+    prepare.add_argument('--apply',action='store_true')
+    posting = sub.add_parser('posting')
+    posting.add_argument('operation',choices=('start','stop','status','confirm'))
+    posting.add_argument('--apply',action='store_true')
     args = parser.parse_args(); log = None
     try:
         root = safe_path(args.root)
         log = Log(args.log_dir); print('로그: '+str(log.path),flush=True)
         log.event('START',args.action+' / '+str(root))
-        if args.action in {'init','add'}:
+        if args.action == 'prepare-posting':
+            from posting_deploy import prepare
+            prepare(root,args.hostname,args.apply,log); result = 0
+        elif args.action == 'posting':
+            if args.operation != 'status' and not args.apply:
+                log.event('DRY_RUN','포스팅 '+args.operation+' 계획만 표시합니다. 실제 적용은 --apply가 필요합니다.')
+            else:
+                from posting_deploy import operate
+                operate(root,args.operation,log)
+            result = 0
+        elif args.action in {'init','add'}:
             names = list(DEFAULTS) if args.action=='init' else [slug(args.name)]
             source = args.source.expanduser().absolute() if args.action=='add' and args.source else None
             for name in names: log.event('PLAN',str(root/name)+' → repo / data / backups (기존 파일 유지)')

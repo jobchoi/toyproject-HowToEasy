@@ -320,3 +320,16 @@
 - [ ] 데이터 백업·기존 경로 의존성 확인 후 포스팅부터 실제 Compose 운영 이관
 
 이번 초기 구성은 관리 구조와 문서를 생성하며 기존 코드·자료 이동/서비스 재시작/Compose 생성은 하지 않는다. 기존 DuctTape/File Browser/Nginx와 Tailscale 연결을 유지한다.
+
+
+## 포스팅 실제 Docker 이관 도구
+
+- [x] Dockerfile·허용 목록 .dockerignore·단일 워커/loopback/상태 점검/로그 회전 Compose 정의
+- [x] prepare-posting 계획/apply: 포트/Git 점검·코드 복사·자료 복사·백업 복원 해시 검증
+- [x] 원본 유지·비어 있지 않은 대상 충돌 차단·변경 감지·공간 점검·상태 등록
+- [x] posting start/stop/status/confirm 대상 서비스만 관리, 변경 명령 명시적 apply
+- [x] 준비·실패·기존자료 보존·백업 복원·환경값 충돌·상태 전이 모의 테스트
+- [ ] Docker 엔진에서 Compose config·이미지 빌드 실제 검증 (개발 환경 Docker 없음)
+- [ ] 라즈 ARM 실행·8443 저장/사진·재시작/재부팅·서버 밖 백업 확인
+
+기존 초기 등록과 실제 이관은 분리한다. Docker 라이프사이클 테스트는 모의 실행이며 실제 배포 성공으로 기록하지 않는다.
