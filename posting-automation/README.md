@@ -178,3 +178,9 @@ Compose·.env와 실제 데이터는 자동 이관하지 않습니다. 생성된
 이관 후에는 [운영·업데이트·백업·기존 서비스 진단](docs/POST_MIGRATION_OPERATIONS.md)을 참고하세요. 관리 실행기를 새 repo로 전환하고 현재 data/ui를 백업할 수 있습니다. 기존 apps 폴더의 .local을 현재 Docker 원고 저장소와 혼동하지 마세요.
 
 SSH 키 인증이 준비됐다면 [원격 자동화 안내](docs/REMOTE_AUTOMATION.md)에 따라 작업 PC에서 `scripts/remote_server.py`로 서버 관리와 결과 회수를 수행할 수 있습니다. 고정 workflow, 기본 계획/명시적 apply, 작업 ID 중복 방지, 분리 원격 작업자 및 결과 조회를 지원합니다. GitHub/SSH 인증이 없는 환경에서는 실패를 기록하고 중단합니다.
+
+## 작업 재개·개발 기록 산출물
+
+새 환경은 [환경 재현 runbook](docs/agent/ENVIRONMENT_RUNBOOK.md)과 [최신 인수인계](HANDOFF.md)를 따른다. `python3 scripts/agent_environment.py`는 기본적으로 네트워크 없이 실행한다.
+
+실제 작업 근거에서 Blogger/티스토리용 원고·HTML 발표·PPTX·Google Apps Script를 만드는 방법은 [기록 산출물 안내](docs/publication/README.md)에 있다. 현재는 검토용이며 서버 전체 정리·실플랫폼 게시·Google 계정 실행 완료를 뜻하지 않는다.

@@ -157,3 +157,11 @@ remote_server.py/remote_job.py는 허용된 workflow, 선택적 push/원격 fast
 ## 2026-11-04 환경 재현·인수인계 feature
 
 사용자 요청에 따라 feature/repeatable-agent-environment에서 작업했다. agent_environment.py는 표준 라이브러리로 도구/가상환경/Git 상태와 인증 환경의 존재 여부만 확인하고, 원격 SSH는 명시한 경우에만 제한 시간 내 점검한다. 비밀값/SSH stderr 미출력 및 timeout 실패 분류 테스트 2개 통과. 반복 setup 원본·Git flow·인수인계·현재 서버 미확인 경계를 ENVIRONMENT_RUNBOOK과 HANDOFF에 정리했다. 서버 SSH는 ConnectTimeout=8 시간 초과로 실패해 이번 재개에서 운영 변경은 없다. 과거 서버 정상 상태를 현재 상태로 기록하지 않는다. 게시 대상 두 URL은 사용자에게 받았으며 서버 정리 완료 전에는 실제 게시하지 않는다.
+
+## 2026-11-04 근거 기반 게시·발표 feature
+
+feature/evidence-based-project-publication에서 공개 가능한 주장 12개와 저장소 근거 경로를 명시한 JSON을 작성했다. 하나의 자료에서 검토 MD, Blogger/티스토리 HTML, Blogger 초안 payload, 13장 HTML/JSON 발표, Google Slides/Drive PPTX/Blogger 초안용 Apps Script를 생성한다. 서버 전체 정리 미완료 및 현재 SSH 실패를 기록하고 publication_ready=false로 초안 네트워크 요청을 차단한다. 티스토리 공식 종료 공지와 Google 공식 API 문서를 확인했다. 실제 플랫폼 게시/Google 계정 실행은 하지 않았다.
+
+별도 .venv-publication을 구성하는 publication 프로필과 python-pptx 1.0.2를 추가했다. .local/project-publication-20261104-v2에 실제 13장 PPTX(재개방/ZIP/전체 XML 검사)와 원고·스크립트를 생성했다. 전체 unittest 80개 완료(선택 브라우저/PPTX 검사 2개 제외), 발표 환경 테스트 4개 전부 통과. Google Apps Script는 순수 JavaScript 모의 실행으로 13장 생성/중복 방지/미완료 차단/초안 요청 불확실 결과의 재전송 방지를 검증했다. Google 실제 권한·렌더링·Drive 내보내기는 미검증이며 PPTX의 실제 PowerPoint 화면 렌더링도 별도다. 생성물은 Git에서 제외하고 근거 입력/생성기/지침만 커밋한다.
+
+사용자는 보드가 켜져 있고 ./manage.sh restart가 invalid choice라고 보고했다. 이는 현재 CLI에 해당 명령이 없다는 사실이며 서비스 고장/SSH 시간 초과 원인으로 단정하지 않는다. 로컬 Tailscale은 Running이고 대상 피어 Online 표시를 확인했다. 다음 feature에서 대상 프로젝트를 지정하는 재시작을 추가한다.

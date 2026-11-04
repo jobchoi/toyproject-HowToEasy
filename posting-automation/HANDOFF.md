@@ -40,3 +40,5 @@ remote_server.py는 migrate/rollback-filebrowser, repair, posting-backup, status
 사용자 대상은 https://lealnspire.blogspot.com 및 https://rt-jobchoi.tistory.com 이다. 최종 작업 완료 후 게시할 목적이며 지금은 초안 준비다. 공개 글·슬라이드는 공개 가능한 증거 목록만 사용한다. 서버 주소/사용자 경로/원시 보고서/원고/키는 넣지 않는다. Blogger OAuth와 Google Apps Script 실행은 계정 연결·동의가 필요하다. 티스토리 공식 Open API는 종료됐으므로 API 업로드 완료를 주장하지 않는다.
 
 블로그·발표 결과의 생성/로컬 검증/Google 실행/게시를 구분해 기록한다. 현재 단계와 feature 통합 커밋은 WORK_HISTORY와 Git 이력을 확인한다.
+
+게시/발표 구현: docs/publication/project-story.json의 공개 가능한 주장/근거에서 scripts/build_publication.py가 MD/플랫폼 HTML/발표 HTML/JSON/Apps Script와 선택적 PPTX를 생성한다. 별도 publication 프로필은 .venv-publication을 사용한다. 현재 publication_ready=false이고 서버 차단 사실이 남아 있어 Blogger 초안 생성이 차단된다. 티스토리는 종료된 Open API 대신 HTML 전달이다. 기능 지침은 docs/publication/README.md, Google 템플릿은 operations/google에 있다. 실제 클라우드 실행과 발행은 미실행이다.

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-11-04",
+  "title": "포스팅 자동화 도구를 만들며: 원고 작업실부터 서버 운영 분리까지",
+  "publication_ready": false,
+  "targets": {"blogger": "https://lealnspire.blogspot.com", "tistory": "https://rt-jobchoi.tistory.com"},
+  "scope_note": "작업 중간 기록입니다. 서버 전체 정리, 실플랫폼 게시, Google Slides 계정 실행은 완료하지 않았습니다.",
+  "claims": [
+    {"id":"C01","status":"implemented","title":"기존 프로젝트를 보존하고 별도 도구로 시작","text":"기존 backend와 frontend를 보존하고 posting-automation 아래에서 작업했다. 자료를 가져와 원고를 구성하고 검토·내보내기로 이어지는 흐름을 우선했다.","evidence":["AGENTS.md","posting-automation/WORK_HISTORY.md"]},
+    {"id":"C02","status":"implemented","title":"CLI에서 원고 작업실 UI로 확장","text":"평문과 제한된 Markdown 입력, 원고 편집·미리보기·이전 버전 열기·내보내기를 웹 UI로 연결했다. HTTP Controller, 서비스, View를 나눠 기존 코어를 재사용했다. 현재는 단일 사용자 도구이며 다중 사용자 인증은 구현하지 않았다.","evidence":["posting-automation/posting_tool/web.py","posting-automation/posting_tool/web_service.py","posting-automation/tests/test_document_workflow.py"]},
+    {"id":"C03","status":"implemented","title":"디자인과 사진 정보를 원고에 보존","text":"서로 다른 샘플 디자인 4종과 사용자 템플릿을 제공했다. 색상·글꼴·여백 조절과 사진·캡션·출처 편집을 지원하며, 원고 버전과 HTML/ZIP 내보내기에 정보를 보존하도록 구현했다.","evidence":["posting-automation/posting_tool/sample_templates.py","posting-automation/posting_tool/media.py","posting-automation/tests/test_media.py"]},
+    {"id":"C04","status":"implemented","title":"완성된 AI 집필기로 설명하지 않기","text":"현재 원고 변환은 규칙 기반이다. AI가 문맥을 분석해 새로운 글을 쓰는 기능, 네이버 실게시, 다중 사용자 인증은 완료하지 않았다. 사용할 수 있는 기능과 앞으로 만들 기능을 구분했다.","evidence":["posting-automation/HANDOFF.md","posting-automation/posting_tool/service.py"]},
+    {"id":"C05","status":"verified_historical","title":"프로젝트별 서버 관리 기준 마련","text":"프로젝트별 repo·data·backups 구조와 관리 진입점, 등록표, 운영 지침을 마련했다. 등록 완료와 실제 이관 완료를 구분했다. 과거 실행 로그에서 포스팅 서비스의 Docker 실행과 재시작을 확인했으며, 재부팅 복구까지 검증한 것은 아니다.","evidence":["posting-automation/scripts/manage_server.py","posting-automation/WORK_HISTORY.md"]},
+    {"id":"C06","status":"verified_historical","title":"백업을 만든 뒤 실제로 복원해 보기","text":"포스팅 자료 백업을 임시 경로에 복원하고 해시를 대조했다. 실행 중이던 포스팅 앱만 중지·재개했으며, 사용자 승인 후 작업 PC로 복사한 백업도 원본과 해시가 일치하는지 확인했다. 이 검증은 당시 백업을 대상으로 한다.","evidence":["posting-automation/scripts/server_maintenance.py","posting-automation/WORK_HISTORY.md"]},
+    {"id":"C07","status":"verified_historical","title":"FileBrowser 상태 점검과 운영 제어 분리","text":"서비스 HTTP 응답은 정상이지만 기존 상태 검사 스크립트가 실패하는 상황을 확인했다. 검증한 loopback 검사로 바꾼 뒤 정상 상태를 확인했다. 이후 기존 데이터·볼륨·이미지를 유지하고 운영 Compose만 분리했다. 데이터 폴더 이전과 서버 전체 정리가 끝난 것은 아니다.","evidence":["posting-automation/scripts/filebrowser_repair.py","posting-automation/scripts/filebrowser_migrate.py","posting-automation/WORK_HISTORY.md"]},
+    {"id":"C08","status":"verified_historical","title":"SSH 작업 결과를 보고서로 회수","text":"허용된 작업을 SSH로 실행하고 작업 ID별 결과와 관리 로그를 작업 PC에 저장하도록 만들었다. 실제 진단·백업·FileBrowser 전환에 사용했다. 통신 결과가 불확실하면 동일 작업 ID를 조회하며, 새 변경 명령을 무작정 반복하지 않는다.","evidence":["posting-automation/scripts/remote_server.py","posting-automation/scripts/remote_job.py","posting-automation/tests/test_remote_operations.py"]},
+    {"id":"C09","status":"user_reported","title":"접속 오류와 서비스 오류를 구분","text":"접속 경로의 404가 다른 서비스로 전달된 요청이라는 점을 확인했다. 사용자가 별도 tailnet 접속 설정을 적용한 후 페이지가 열린다고 보고했다. 이 보고를 로그인·파일 쓰기 검증까지 완료한 것으로 확대하지 않았다.","evidence":["posting-automation/HANDOFF.md","posting-automation/docs/FILEBROWSER_MIGRATION_PLAN.md"]},
+    {"id":"C10","status":"blocked_current","title":"재개 시점에 서버 상태를 다시 확인","text":"2026년 11월 4일 재개 시 SSH 접속이 시간 초과로 실패했다. 서버에 새 변경을 적용하지 않았으며, Nginx·DuctTape 이전과 FileBrowser 데이터 이동은 남아 있다. 접속 실패의 근본 원인은 아직 확정하지 않았다.","evidence":["posting-automation/HANDOFF.md","posting-automation/WORK_HISTORY.md"]},
+    {"id":"C11","status":"implemented","title":"다른 환경에서도 이어갈 수 있는 기록","text":"단계별 feature 브랜치와 no-ff 통합으로 이력을 남기기 시작했다. 저장소의 환경 설정 입력, 명시적 원격 점검, 최신 인수인계 문서를 준비했다. 이것이 모든 운영 환경의 자동 설정을 보장하는 것은 아니다.","evidence":["posting-automation/scripts/agent_environment.py","posting-automation/docs/agent/ENVIRONMENT_RUNBOOK.md"]},
+    {"id":"C12","status":"planned","title":"남은 작업과 게시 원칙","text":"서버 연결 복구 후 서비스별 백업·복귀 절차를 검증하며 운영 정리를 이어갈 예정이다. 그 뒤 Blogger와 티스토리에 작업 기록을 게시한다. 현재 산출물은 검토용이며 플랫폼 업로드 성공이나 Google 계정 실행을 주장하지 않는다.","evidence":["posting-automation/HANDOFF.md","posting-automation/TASKS.md"]}
+  ]
+}
