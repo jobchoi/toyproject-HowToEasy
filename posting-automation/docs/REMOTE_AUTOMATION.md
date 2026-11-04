@@ -128,3 +128,7 @@ python3 scripts/remote_server.py --host raspberry-posting --workflow repair-file
 ```
 
 등록된 새/복귀 ID와 이미지/마운트가 같고 복귀용이 정지/restart=no이며 예상 네트워크가 완전히 누락된 경우에만 기존 my-server_default에 해당 컨테이너 endpoint를 연결한다. 컨테이너 재생성·데이터 이동·Tailscale 설정 변경은 하지 않는다. 일부 다른 네트워크/포트가 존재하거나 실제 HTTP 검증이 실패하면 반복하지 않고 check_required로 기록한다. doctor도 외부 endpoint/호스트 응답을 검사한다.
+
+## FileBrowser 계정명 확인
+
+`filebrowser-accounts` workflow는 기본 계획 모드다. --apply를 명시하면 실행 중인 대상만 잠시 정지해 DB 사본과 해시를 검증하고 즉시 재개한다. 이후 네트워크 없는 임시 컨테이너에서 사본의 사용자명만 조회한다. 원본 비밀번호/권한은 변경하지 않으며 비밀번호/해시는 출력하지 않는다. 사본은 서버의 private backups/account-query-*에 보관한다. 기존 평문 비밀번호는 이 명령으로 복원할 수 없다.

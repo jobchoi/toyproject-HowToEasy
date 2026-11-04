@@ -191,3 +191,7 @@ feature/filebrowser-network-recovery에서 대상 ID/이미지/마운트/기존 
 ## 실제 외부 연결 복구 검증
 
 전체 회귀 92개 완료(선택 2개 제외), 관련 FileBrowser 검사 19개 통과 후 9af1bdb를 코드 전용 bundle로 서버 develop에 fast-forward했다. 계획 6b4dc7978b5947009a8c5aa58f4e9eab에서 endpoint 누락을 doctor가 검출했다. 실제 복구 5e1a82d7730b4c4d98f90e8bb8544c8e가 원래 네트워크 endpoint 연결·동일 컨테이너/마운트 유지·호스트8080 HTTP200·doctor0으로 성공했다. 이후 작업 PC에서 사용자의 HTTPS10000 주소를 TLS 검증을 유지해 요청했고 /health HTTP200(text/plain), / HTTP200(text/html)를 직접 확인했다. 로그인/파일 쓰기를 확인한 것은 아니다. Tailscale/포트 번호/자료/컨테이너 생성은 변경하지 않았다. GitHub push는 기존 인증 문제가 남아 있어 로컬 commit 및 서버 bundle 적용을 구분한다.
+
+## FileBrowser 계정 조회 기능
+
+사용자가 계정 확인을 요청했다. 실행 중 DB에 대한 기존 CLI 조회는 실패했으며 계정을 추측하거나 비밀번호를 재설정하지 않았다. feature/filebrowser-account-inspection에서 원본 DB의 일관된 private 사본/해시 검증·원래 실행 상태 재개·네트워크 없는 임시 컨테이너에서 사용자명만 조회하는 명령을 추가했다. 사본 생성 실패 시 서비스 재개, 원본 보존, 해시/비밀값 미출력 검사를 포함한 4개 테스트 통과. 실제 계정 조회 결과는 별도 실행 후 기록한다.

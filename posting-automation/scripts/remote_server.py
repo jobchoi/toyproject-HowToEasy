@@ -13,7 +13,7 @@ from uuid import uuid4
 
 ROOT=Path(__file__).resolve().parents[1]
 PAYLOAD=Path(__file__).with_name('remote_job.py')
-WORKFLOWS=('status','diagnose','repair-filebrowser','posting-backup','migrate-filebrowser','rollback-filebrowser','restart-posting','restart-filebrowser','stabilize-filebrowser','repair-filebrowser-network','sync-only')
+WORKFLOWS=('status','diagnose','repair-filebrowser','posting-backup','migrate-filebrowser','rollback-filebrowser','restart-posting','restart-filebrowser','stabilize-filebrowser','repair-filebrowser-network','filebrowser-accounts','sync-only')
 
 
 def write_private(path,text):
