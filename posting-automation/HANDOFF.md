@@ -52,3 +52,11 @@ remote_server.py는 migrate/rollback-filebrowser, repair, posting-backup, status
 ## 최신 접속 검증 보완
 
 이전 stabilize 성공은 내부 healthy만 확인해 외부 연결을 놓쳤다. 사용자 접속 불가 보고 후 실제 NetworkSettings.Networks/Ports가 비어 있고 호스트8080이 거부되는 것을 확인했다. 9af1bdb의 repair-filebrowser-network로 기존 네트워크 endpoint만 복구(작업 5e1a82d7730b4c4d98f90e8bb8544c8e), 동일 ID/데이터·호스트 HTTP200·doctor0을 확인했다. 작업 PC의 HTTPS10000 / 및 /health도 TLS 검증 상태에서 HTTP200이다. 로그인/파일 쓰기 확인과 전체 서버 정리는 여전히 별도다. 현재 관리 코드 기준은 9af1bdb이며 최종 문서 갱신은 추가 로컬 커밋이다. 전체 회귀92개 완료(선택2개 제외).
+
+## 최신 플랫폼 전달 기능 (2026-11-04)
+
+TistoryEditorPublisher/BloggerEditorPublisher가 공통 EditorPublisher→Publisher를 상속한다. PREPARE_EDITOR/EXPORT만 지원하며 CREATE_DRAFT를 가장하지 않는다. 웹 UI의 검토 후 플랫폼 선택·전달 준비·제목/서식 HTML/소스 복사·편집기 열기·복사 권한 fallback·수정 시 무효화를 제공한다. 티스토리 공식 API 종료로 실제 편집기 저장/발행은 별도다. plugin-management로 TinyFish를 발견·제안했으나 연결 확인은 없다. 이전 Google 업로드 시험 경로의 사용자 응답도 대기 중이다.
+
+계정 조회 작업 24b97a68b32b496e892f22b4e2f4291d는 private DB 사본/해시·서비스 재개·격리 helper 조회로 성공했다. 비밀번호/권한은 변경하지 않았고 실제 사용자명은 원격 private 보고서 및 사용자 응답에만 있다. 소스/공개 글에 계정명을 복사하지 않는다.
+
+전체 100개 검사 완료(선택2개 제외), 로컬 Chromium에서 실제 UI/모바일·클립보드 거부 fallback 검증 통과. 사전 백업 bb72485219bd406eb22a5df6ed31ced5 후 31d1a74를 bundle로 서버에 적용, deploy-posting 작업 0ec494a3f4584a0db4ed8f0d8bfa6cd0에서 포스팅 이미지 갱신/healthy를 확인했다. 원격 HTTPS8443에 합성 테스트 원고 8af9b019b56a476aa6ff0cc08dd8710d를 만들고 두 editor-package API를 실제 확인했다. 결과는 prepared_for_editor/remote_saved=false이며 외부 Blogger·티스토리 업로드 성공이 아니다. 실제 저장/업로드 시험은 로그인된 계정 연결이 필요하다. 관련 지침 docs/TISTORY_EDITOR_DELIVERY.md 참조.
