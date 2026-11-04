@@ -421,3 +421,10 @@ File Browser 상태 검사 수정은 디렉터리 이전 완료와 구분한다.
 - [x] 필수 프로젝트 restart·소유/ID/healthy 확인 도구와 원격 workflow 구현/모의 검증
 - [ ] 로그인·파일 쓰기 확인 후 남은 데이터/서비스 이전
 - [ ] GitHub push: 에이전트 HTTPS 인증 부재, 커밋 준비 (실서버에는 코드 bundle 배포)
+
+## FileBrowser 외부 접속 복구
+
+- [x] 내부 healthy와 실제 endpoint/공개포트/호스트HTTP 검증 분리
+- [x] ID/이미지/마운트 보존한 네트워크 단독 복구, 실제 작업 5e1a82d7730b4c4d98f90e8bb8544c8e 성공
+- [x] 작업 PC의 HTTPS10000 로그인 페이지 및 /health TLS 검증·HTTP200 확인
+- [ ] 로그인 후 목록/파일 열기·쓰기 사용자 확인 (페이지 HTTP200과 구분)
