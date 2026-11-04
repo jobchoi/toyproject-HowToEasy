@@ -409,7 +409,15 @@ File Browser 상태 검사 수정은 디렉터리 이전 완료와 구분한다.
 
 - [x] feature/repeatable-agent-environment: 네트워크 기본 비활성 환경 doctor·민감값 제외·SSH timeout 검사
 - [x] 반복 설정 runbook과 최신 HANDOFF를 단일 재개 지침으로 정리
-- [ ] 실서버 운영 정리 재개: 현재 SSH 접속 시간 초과, 서비스 변경 없음
+- [x] SSH 재연결 및 실제 현황 재조사·FileBrowser 충돌 복구
+- [ ] 서버 전체 정리: FileBrowser 데이터 이동·Nginx/DuctTape 개별 이전
 - [x] 공개 가능한 근거 12개와 Blogger/티스토리 원고 생성·검증 (실게시 아님)
 - [x] Google Slides/PPTX 스크립트 및 로컬 13장 PPTX 생성·구조 검증 (Google 실실행 아님)
 - [ ] 서버 최종 정리 확인 후 실제 플랫폼 게시 및 Google 계정 실행
+
+## 2026-11-04 실제 운영 결과
+
+- [x] stabilize 작업 1ccad4e005cd429fa49195d085097d72: 복귀용 restart=no·정지, 동일 독립 FileBrowser healthy, doctor 0
+- [x] 필수 프로젝트 restart·소유/ID/healthy 확인 도구와 원격 workflow 구현/모의 검증
+- [ ] 로그인·파일 쓰기 확인 후 남은 데이터/서비스 이전
+- [ ] GitHub push: 에이전트 HTTPS 인증 부재, 커밋 준비 (실서버에는 코드 bundle 배포)
