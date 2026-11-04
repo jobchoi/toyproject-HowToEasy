@@ -1,6 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 let files = [], current = null, token = '', dirty = false, busy = false, delivered = false;
+let editorPackage=null;
 let mode='plain', blocks=[], rawMode=false, templateKey=null, templateDirty=false, sourceDirty=false, articleRecords=[];
 const status = (message, error = false) => { $('status').textContent = message; $('status').classList.toggle('error', error); };
 function updateControls() {
@@ -12,6 +13,12 @@ function updateControls() {
   $('apply').disabled = !current || busy || !dirty;
   const enabled = current && !dirty && !busy && $('reviewed').checked;
   $('copy').disabled = !enabled;
+  $('prepare-platform').disabled=!enabled;
+  const prepared=enabled && editorPackage && editorPackage.version_id===current.id && editorPackage.provider===$('platform-provider').value;
+  for(const id of ['copy-platform-title','copy-platform-rich','copy-platform-html'])$(id).disabled=!prepared;
+  $('open-platform-editor').classList.toggle('disabled',!prepared);
+  $('open-platform-editor').setAttribute('aria-disabled',String(!prepared));
+  if(prepared)$('open-platform-editor').href=editorPackage.editor_url;else $('open-platform-editor').removeAttribute('href');
   for (const [id, name] of [['download-md','article.md'],['download-html','article.html'],['download-zip','bundle.zip']]) {
     const link = $(id);
     link.classList.toggle('disabled', !enabled);
@@ -93,6 +100,7 @@ async function api(url, data) {
   return response.json();
 }
 function show(result) {
+  editorPackage=null;$('platform-package').hidden=true;
   current = result; dirty = false; delivered = false; sourceDirty=false;
   blocks=result.blocks; rawMode=false; $('markdown').hidden=true; $('document-editor').hidden=false; $('toggle-editor').textContent='Markdown 보기'; renderBlocks();
   $('title').value = result.title; $('markdown').value = result.markdown;
@@ -155,6 +163,7 @@ $('prepare').onclick = () => run(async () => {
 });
 function markDirty() {
   if (!current) return;
+  editorPackage=null;$('platform-package').hidden=true;
   dirty = true; delivered = false; $('reviewed').checked = false;
   $('save-state').textContent = '저장하지 않은 변경이 있습니다. 미리보기와 내보내기를 갱신해 주세요.';
   updateControls();
@@ -165,7 +174,7 @@ $('apply').onclick = () => run(async () => {
   show(await api(`/api/previews/${current.id}`,{title:$('title').value, ...(rawMode ? {markdown:$('markdown').value} : {blocks})}));
   status('편집 내용과 미리보기를 저장했습니다. 내용을 다시 확인해 주세요.');
 });
-$('reviewed').onchange = () => {delivered=false; updateControls();};
+$('reviewed').onchange = () => {editorPackage=null;$('platform-package').hidden=true;delivered=false;updateControls();};
 for(const id of ['download-md','download-html','download-zip']) $(id).addEventListener('click', () => { if(current && !dirty && $('reviewed').checked) {delivered=true; updateControls();} });
 $('copy').onclick = async () => {
   try { await navigator.clipboard.writeText(current.blocks.map(b=>b.type==='image'?`[사진: ${b.text}]\n${b.caption||''}\n${b.source||''}`:b.type==='list'?b.text.split('\n').map(x=>'• '+x).join('\n'):b.type==='divider'?'────────':b.text).join('\n\n')); delivered=true; updateControls(); status('일반 본문을 복사했습니다. 붙여넣은 뒤 플랫폼 서식을 확인해 주세요.'); }
@@ -396,3 +405,33 @@ addEventListener('resize', scheduleNavigation);
 addEventListener('hashchange', scheduleNavigation);
 new ResizeObserver(scheduleNavigation).observe(document.querySelector('main'));
 updateNavigation();
+
+
+$('platform-provider').onchange=()=>{editorPackage=null;$('platform-package').hidden=true;updateControls();};
+$('prepare-platform').onclick=()=>run(async()=>{
+  const result=await api(`/api/previews/${current.id}/editor-package`,{provider:$('platform-provider').value,reviewed:$('reviewed').checked});
+  editorPackage=result;$('platform-package').hidden=false;
+  $('platform-target').textContent='대상: '+result.target_url+' · 전달 준비됨 / 저장·발행 전';
+  $('platform-warnings').replaceChildren();
+  for(const warning of result.warnings){const item=document.createElement('li');item.textContent=warning;$('platform-warnings').append(item);}
+  $('platform-title').value=result.title;$('platform-html').value=result.html;
+  $('platform-status').textContent='제목과 본문을 복사한 뒤 편집기를 열어 붙여넣으세요. 로그인은 해당 플랫폼에서 진행합니다.';
+  status('편집기 전달 자료가 준비됐습니다. 플랫폼에는 저장되지 않았습니다.');
+});
+async function copyPlatform(kind){
+  if(!editorPackage || !current || dirty || !$('reviewed').checked || editorPackage.version_id!==current.id)return;
+  try{
+    if(kind==='rich'){
+      if(!navigator.clipboard?.write || typeof ClipboardItem==='undefined')throw new Error('rich unavailable');
+      await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([editorPackage.html],{type:'text/html'}),'text/plain':new Blob([editorPackage.plain],{type:'text/plain'})})]);
+    }else await navigator.clipboard.writeText(kind==='title'?editorPackage.title:editorPackage.html);
+    if(kind!=='title'){delivered=true;updateControls();}
+    $('platform-status').textContent='복사했습니다. 편집기에 붙여넣고 표시·사진·출처를 확인하세요. 아직 게시되지 않았습니다.';
+  }catch{
+    const field=$(kind==='title'?'platform-title':'platform-html');field.closest('details').open=true;field.focus();field.select();
+    $('platform-status').textContent='브라우저가 복사를 허용하지 않았습니다. 선택된 내용을 직접 복사하세요. 본문은 플랫폼 HTML 모드에 붙여넣으세요.';
+  }
+}
+$('copy-platform-title').onclick=()=>copyPlatform('title');
+$('copy-platform-rich').onclick=()=>copyPlatform('rich');
+$('copy-platform-html').onclick=()=>copyPlatform('html');

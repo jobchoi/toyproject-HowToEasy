@@ -79,6 +79,25 @@ def create_app(workspace=None):
     def config():
         return {'token': token}
 
+    @app.get('/api/platforms')
+    def platforms():
+        from .providers import builtin_registry
+        registry=builtin_registry()
+        return {'platforms':[{'id':p.name,'label':label,'target_url':p.target_url,'editor_url':p.editor_url,'delivery':'editor_assisted','remote_saved':False} for p,label in [(registry.get('tistory-editor'),'티스토리'),(registry.get('blogger-editor'),'Blogger')]]}
+
+    @app.post('/api/previews/{key}/editor-package')
+    async def editor_package(key: str,request: Request):
+        from dataclasses import asdict
+        from .providers import builtin_registry
+        data=await body(request)
+        try:
+            provider=data.get('provider')
+            if provider not in {'tistory-editor','blogger-editor'}:raise ValueError('편집기 전달 대상을 선택하세요.')
+            prepared=builtin_registry().get(provider).prepare_editor(store.load(key),reviewed=data.get('reviewed') is True)
+            return {'version_id':key,**asdict(prepared)}
+        except FileNotFoundError:raise HTTPException(404,'원고를 찾을 수 없습니다.') from None
+        except ValueError as exc:raise HTTPException(400,str(exc)) from None
+
     @app.get('/api/roadmap')
     def roadmap():
         from .progress import read_roadmap

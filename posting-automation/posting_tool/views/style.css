@@ -21,3 +21,7 @@
   .sidebar .workspace-nav .nav-item{display:flex;justify-content:center;padding:8px 2px;margin:0;font-size:11px;gap:0;text-align:center;white-space:nowrap}
   .workspace-nav .nav-item>span{display:none}
 }
+
+.platform-delivery{margin-top:24px;padding-top:20px;border-top:1px solid #d8e1e9}.platform-delivery select{margin:0 12px 12px 0}.platform-delivery .export-actions{flex-wrap:wrap;margin:14px 0}.platform-delivery details{margin-top:16px}.platform-delivery textarea{width:100%;min-height:180px}.platform-delivery input[readonly]{width:100%;box-sizing:border-box}
+
+.platform-delivery{min-width:0;overflow-wrap:anywhere}.platform-delivery p,.platform-delivery li{white-space:normal}.platform-delivery select{max-width:100%}
