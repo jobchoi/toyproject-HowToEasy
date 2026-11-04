@@ -112,7 +112,7 @@ class MigrationTests(unittest.TestCase):
         def lookup(log,name):
             if name!='file-service':return old
             return dict(current,running=True) if any(code=='MANAGED_START' for _,code in self.calls) else current
-        with patch.object(migration,'container',side_effect=lookup),patch.object(migration,'run',side_effect=self.fake):migration.stabilize(self.root,True,self.log)
+        with patch.object(migration,'container',side_effect=lookup),patch.object(migration,'run',side_effect=self.fake),patch('filebrowser_network.endpoint_ready',return_value=True),patch('filebrowser_network.local_health',return_value=True):migration.stabilize(self.root,True,self.log)
         self.assertEqual([code for _,code in self.calls],['PRESERVED_DISABLE_RESTART','PRESERVED_STOP','MANAGED_START'])
         self.assertFalse(any('rm' in args or 'up' in args for args,_ in self.calls))
         self.assertEqual(json.loads((self.root/'filebrowser/migration.json').read_text())['preserved_restart_state'],'disabled')

@@ -117,3 +117,14 @@ cd ~/web-server
 원격에서는 restart-posting / restart-filebrowser workflow와 --apply를 사용한다. 기본 계획 모드는 서비스 변경을 하지 않는다.
 
 복귀용 컨테이너가 `always`로 다시 시작돼 8080 포트를 점유한 경우, 등록된 ID/원본 이미지/마운트 동일성 확인 후 stabilize-filebrowser로 복귀용 restart=no·정지 → 기존 독립 컨테이너 시작·healthy를 검사한다. 컨테이너/데이터를 삭제하지 않는다. 새 이관도 복귀 컨테이너의 restart=no를 적용하고 rollback 시 원래 정책을 복원한다. 재부팅 자동복구 전체 검증을 대신하지 않는다.
+
+## 내부 healthy지만 외부 접속이 거부될 때
+
+포트 번호가 바뀌었다고 가정하지 않는다. 현재 FileBrowser의 외부 주소는 HTTPS 10000, 내부 프록시는 호스트 8080 → 컨테이너 80이다. Docker의 포트 설정(HostConfig.PortBindings)과 실제 공개 포트(NetworkSettings.Ports), 연결된 endpoint, 호스트 GET /health를 모두 확인한다. 내부 loopback healthcheck만 통과한 컨테이너는 실제 외부 접근이 불가능할 수 있다.
+
+```bash
+python3 scripts/remote_server.py --host raspberry-posting --workflow repair-filebrowser-network
+python3 scripts/remote_server.py --host raspberry-posting --workflow repair-filebrowser-network --apply
+```
+
+등록된 새/복귀 ID와 이미지/마운트가 같고 복귀용이 정지/restart=no이며 예상 네트워크가 완전히 누락된 경우에만 기존 my-server_default에 해당 컨테이너 endpoint를 연결한다. 컨테이너 재생성·데이터 이동·Tailscale 설정 변경은 하지 않는다. 일부 다른 네트워크/포트가 존재하거나 실제 HTTP 검증이 실패하면 반복하지 않고 check_required로 기록한다. doctor도 외부 endpoint/호스트 응답을 검사한다.

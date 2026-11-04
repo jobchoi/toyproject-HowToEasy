@@ -225,6 +225,9 @@ def check(root, log, doctor=False):
                         log.event('PRESERVED_RUNNING',name+': 복귀용 컨테이너가 실행 중입니다. 포트 충돌/기동 정책을 확인하세요.');problems+=1
                     if name=='filebrowser' and value.get('control_state')=='switched_pending_review' and observed.get('file-service')!='running':
                         log.event('MANAGED_NOT_RUNNING','독립 FileBrowser가 실행 중이 아닙니다.');problems+=1
+                    if name=='filebrowser' and value.get('control_state')=='switched_pending_review' and observed.get('file-service')=='running':
+                        from filebrowser_network import check as check_endpoint
+                        if not check_endpoint(log):problems+=1
     return 1 if problems else 0
 
 
@@ -249,13 +252,17 @@ def main():
     sub.add_parser('diagnose-filebrowser')
     for action in ('migrate-filebrowser','rollback-filebrowser','stabilize-filebrowser'):
         migration = sub.add_parser(action); migration.add_argument('--apply',action='store_true')
+    endpoint = sub.add_parser('repair-filebrowser-network'); endpoint.add_argument('--apply',action='store_true')
     fix = sub.add_parser('repair-filebrowser'); fix.add_argument('--apply',action='store_true')
     args = parser.parse_args(); log = None
     try:
         root = safe_path(args.root)
         log = Log(args.log_dir); print('로그: '+str(log.path),flush=True)
         log.event('START',args.action+' / '+str(root))
-        if args.action == 'restart':
+        if args.action == 'repair-filebrowser-network':
+            from filebrowser_network import repair
+            repair(root,args.apply,log); result = 0
+        elif args.action == 'restart':
             from service_restart import restart
             restart(root,args.project,args.apply,log); result = 0
         elif args.action in ('migrate-filebrowser','rollback-filebrowser','stabilize-filebrowser'):
