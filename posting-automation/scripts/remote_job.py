@@ -23,9 +23,10 @@ WORKFLOWS = {
     'stabilize-filebrowser': [('stabilize-filebrowser',),('diagnose-filebrowser',),('doctor',)],
     'repair-filebrowser-network': [('repair-filebrowser-network',),('diagnose-filebrowser',),('doctor',)],
     'filebrowser-accounts': [('filebrowser-accounts',)],
+    'deploy-posting': [('posting','start'),('posting','status')],
     'sync-only': [],
 }
-MUTATING = {'repair-filebrowser', 'posting-backup','migrate-filebrowser','rollback-filebrowser','restart-posting','restart-filebrowser','stabilize-filebrowser','repair-filebrowser-network','filebrowser-accounts'}
+MUTATING = {'repair-filebrowser', 'posting-backup','migrate-filebrowser','rollback-filebrowser','restart-posting','restart-filebrowser','stabilize-filebrowser','repair-filebrowser-network','filebrowser-accounts','deploy-posting'}
 
 
 def write_json(path, data):
@@ -133,7 +134,7 @@ def run(root,job_id,workflow,apply=False,sync=False,collect=False):
                             raise ValueError('REMOTE_CAPABILITY_MISSING')
                 for operation in WORKFLOWS[workflow]:
                     arguments=list(operation)
-                    if apply and workflow in MUTATING and arguments in (['repair-filebrowser'],['posting','backup'],['migrate-filebrowser'],['rollback-filebrowser'],['restart','posting-automation'],['restart','filebrowser'],['stabilize-filebrowser'],['repair-filebrowser-network'],['filebrowser-accounts']): arguments.append('--apply')
+                    if apply and workflow in MUTATING and arguments in (['repair-filebrowser'],['posting','backup'],['migrate-filebrowser'],['rollback-filebrowser'],['restart','posting-automation'],['restart','filebrowser'],['stabilize-filebrowser'],['repair-filebrowser-network'],['filebrowser-accounts'],['posting','start']): arguments.append('--apply')
                     command=[sys.executable,str(manager),'--root',str(root),'--log-dir',str(root/'logs'),*arguments]
                     console.write('[REMOTE_STEP] '+' '.join(operation)+'\n');console.flush()
                     step=subprocess.run(command,stdin=subprocess.DEVNULL,stdout=console,stderr=subprocess.DEVNULL,start_new_session=True)

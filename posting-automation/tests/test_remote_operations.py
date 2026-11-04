@@ -42,7 +42,7 @@ class RemoteOperationsTests(unittest.TestCase):
         self.assertEqual(job.run(self.root,identifier,'status',collect=True)['state'],'succeeded')
 
     def test_migration_apply_flags_reach_manager(self):
-        for workflow in ('migrate-filebrowser','rollback-filebrowser','restart-posting','restart-filebrowser','stabilize-filebrowser','repair-filebrowser-network','filebrowser-accounts'):
+        for workflow in ('migrate-filebrowser','rollback-filebrowser','restart-posting','restart-filebrowser','stabilize-filebrowser','repair-filebrowser-network','filebrowser-accounts','deploy-posting'):
             result=job.run(self.root,uuid4().hex,workflow,True)
             self.assertEqual(result['state'],'succeeded',result)
         calls=[json.loads(line) for line in (self.root/'calls.jsonl').read_text().splitlines()]
@@ -53,6 +53,7 @@ class RemoteOperationsTests(unittest.TestCase):
         self.assertIn(['stabilize-filebrowser','--apply'],calls)
         self.assertIn(['repair-filebrowser-network','--apply'],calls)
         self.assertIn(['filebrowser-accounts','--apply'],calls)
+        self.assertIn(['posting','start','--apply'],calls)
 
     def test_dry_run_unknown_and_symlink_job_paths(self):
         identifier=uuid4().hex;job.run(self.root,identifier,'posting-backup',False)
