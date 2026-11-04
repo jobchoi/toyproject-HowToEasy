@@ -252,6 +252,7 @@ def main():
     sub.add_parser('diagnose-filebrowser')
     for action in ('migrate-filebrowser','rollback-filebrowser','stabilize-filebrowser'):
         migration = sub.add_parser(action); migration.add_argument('--apply',action='store_true')
+    accounts = sub.add_parser('filebrowser-accounts'); accounts.add_argument('--apply',action='store_true')
     endpoint = sub.add_parser('repair-filebrowser-network'); endpoint.add_argument('--apply',action='store_true')
     fix = sub.add_parser('repair-filebrowser'); fix.add_argument('--apply',action='store_true')
     args = parser.parse_args(); log = None
@@ -259,7 +260,12 @@ def main():
         root = safe_path(args.root)
         log = Log(args.log_dir); print('로그: '+str(log.path),flush=True)
         log.event('START',args.action+' / '+str(root))
-        if args.action == 'repair-filebrowser-network':
+        if args.action == 'filebrowser-accounts':
+            from filebrowser_accounts import inspect_accounts
+            names=inspect_accounts(root,args.apply,log)
+            if args.apply:print(json.dumps({'usernames':names},ensure_ascii=False))
+            result = 0
+        elif args.action == 'repair-filebrowser-network':
             from filebrowser_network import repair
             repair(root,args.apply,log); result = 0
         elif args.action == 'restart':
