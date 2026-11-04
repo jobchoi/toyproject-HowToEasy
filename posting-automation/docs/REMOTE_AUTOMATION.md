@@ -132,3 +132,7 @@ python3 scripts/remote_server.py --host raspberry-posting --workflow repair-file
 ## FileBrowser 계정명 확인
 
 `filebrowser-accounts` workflow는 기본 계획 모드다. --apply를 명시하면 실행 중인 대상만 잠시 정지해 DB 사본과 해시를 검증하고 즉시 재개한다. 이후 네트워크 없는 임시 컨테이너에서 사본의 사용자명만 조회한다. 원본 비밀번호/권한은 변경하지 않으며 비밀번호/해시는 출력하지 않는다. 사본은 서버의 private backups/account-query-*에 보관한다. 기존 평문 비밀번호는 이 명령으로 복원할 수 없다.
+
+## 백업 후 UI 이미지 갱신
+
+먼저 posting-backup --apply의 실제 복원 검증 성공을 확인한 뒤, 갱신한 코드의 managed repo에서 deploy-posting --apply를 실행한다. deploy-posting은 포스팅 start(대상 web 이미지 빌드/healthy 대기)와 status만 수행하며 원격 작업 ID/결과 수집으로 연결 중단 시 collect할 수 있다. 기존 자료를 옮기거나 다른 서비스를 재시작하지 않는다. 기본은 계획 모드다. 백업을 암묵적으로 반복하지 않으므로 최근 백업 확인을 생략하지 않는다.

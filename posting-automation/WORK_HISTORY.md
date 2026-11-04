@@ -201,3 +201,7 @@ feature/filebrowser-network-recovery에서 대상 ID/이미지/마운트/기존 
 실제 filebrowser-accounts 작업 24b97a68b32b496e892f22b4e2f4291d 성공: DB private 사본/해시 확인, 서비스/HTTP 재개, 네트워크 없는 helper에서 계정명만 조회했다. 원본 비밀번호/권한은 변경하지 않았고 평문 비밀번호를 조회했다고 주장하지 않는다. 이 단계 배포 커밋은 043cbb5다.
 
 feature/tistory-editor-delivery에서 공통 EditorPublisher를 상속한 Tistory/Blogger 모듈과 PREPARE_EDITOR 기능을 추가했다. 검토한 저장 버전의 전달 자료만 생성하고 remote_saved=false를 유지한다. 제목/서식 HTML/소스 복사, 편집기 열기, 클립보드 거부 fallback, 사진 별도 첨부, 수정 후 무효화를 UI에 연결했다. API/어댑터 검사 4개와 실제 로컬 Chromium에서 리뷰/전환/복사 fallback/모바일/페이지 오류 없음 검증을 통과했다. 외부 로그인과 OS 클립보드는 사용하지 않았다. plugin-management 스킬로 브라우저 통합을 탐색했고 TinyFish를 발견/제안했으나 설치·계정 연결 확인은 없다. 사용자가 보고한 Google 업로드 시험 경로도 아직 응답 대기이며 실제 플랫폼 업로드를 수행했다고 기록하지 않는다.
+
+## 반복 가능한 UI 배포 workflow
+
+feature/repeatable-ui-deployment에서 포스팅 이미지 start/status를 원격 작업 ID·결과 수집에 연결한 deploy-posting workflow를 추가했다. 사전 백업은 실제 posting-backup 작업 bb72485219bd406eb22a5df6ed31ced5에서 복원/해시 검증과 원래 서비스 재개를 확인했다. UI 기능 소스는 31d1a74까지 코드 bundle로 서버에 적용했다. 새 workflow는 기존 원격 회귀에 apply 전달 검사를 포함하며 다른 서비스 재시작/자료 이동은 수행하지 않는다. 실제 이미지 갱신 결과는 후속 실행 기록으로 남긴다.
