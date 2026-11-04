@@ -205,3 +205,7 @@ feature/tistory-editor-delivery에서 공통 EditorPublisher를 상속한 Tistor
 ## 반복 가능한 UI 배포 workflow
 
 feature/repeatable-ui-deployment에서 포스팅 이미지 start/status를 원격 작업 ID·결과 수집에 연결한 deploy-posting workflow를 추가했다. 사전 백업은 실제 posting-backup 작업 bb72485219bd406eb22a5df6ed31ced5에서 복원/해시 검증과 원래 서비스 재개를 확인했다. UI 기능 소스는 31d1a74까지 코드 bundle로 서버에 적용했다. 새 workflow는 기존 원격 회귀에 apply 전달 검사를 포함하며 다른 서비스 재시작/자료 이동은 수행하지 않는다. 실제 이미지 갱신 결과는 후속 실행 기록으로 남긴다.
+
+## 티스토리/Blogger 전달 서버 배포 실검증
+
+전체 회귀100개 완료(선택2개 제외), 마지막 UI 보완 후 로컬 Chromium QA 재통과. 31d1a74 기능 소스를 코드 bundle로 서버에 fast-forward했다. 사전 백업 bb72485219bd406eb22a5df6ed31ced5의 복원/해시 검증 후, 원격 deploy-posting 0ec494a3f4584a0db4ed8f0d8bfa6cd0에서 대상 web 이미지 빌드·healthy를 실제 확인했다. 이후 TLS 검증 상태의 HTTPS8443 API에서 합성 기능 테스트 원고 한 개를 생성하고 Tistory/Blogger 전달 결과 prepared_for_editor/remote_saved=false를 확인했다. 외부 블로그 업로드는 수행하지 않았다. 중복 실행 방지/응답 결과는 ignored .local/editor-server-smoke-20261104.json에 있으며 실제 사용자 원고/암호/토큰을 소스에 기록하지 않았다.
