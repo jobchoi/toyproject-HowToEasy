@@ -100,3 +100,20 @@ python3 scripts/remote_server.py --host raspberry-posting --workflow rollback-fi
 ```
 
 기존 데이터 경로·익명 볼륨·공유 네트워크를 보존한다. 중지된 기존 컨테이너는 이름을 바꿔 보관하며 자동 삭제하지 않는다. 컨테이너 rename 후 새 서비스로 전환하기 전에 설정/DB/공유 폴더 tar를 실제 임시 복원해 파일 내용과 파일 모드를 검증한다. UID/GID는 tar 메타데이터에 보존하며 현재 데이터 소유자를 변경하지 않는다. 운영 제어 전환은 데이터 디렉터리 이동이나 실제 웹 로그인 검토 완료를 뜻하지 않는다. pending_review 중에는 기존 my-server Compose로 fileserver를 재생성하거나 down하지 않는다. 복귀도 대상 FileBrowser만 수행하며 볼륨을 삭제하지 않는다.
+
+## 프로젝트별 재시작 (2026-11-04 추가)
+
+관리기를 최신 develop으로 갱신한 후 서버에서 실행한다. 프로젝트 이름 없이 `./manage.sh restart`를 호출하거나 전체 서비스를 재시작하지 않는다.
+
+```bash
+cd ~/web-server
+./manage.sh restart posting-automation           # 계획/소유 확인만
+./manage.sh restart posting-automation --apply   # 기존 포스팅 컨테이너만
+./manage.sh restart filebrowser --apply          # 기존 독립 FileBrowser만
+```
+
+재시작은 빌드/재생성하지 않고 기존 컨테이너의 healthy와 동일 ID를 확인한다. 새 환경변수/코드 적용이나 미생성 컨테이너의 배포는 각 start/이관 절차로 처리한다. Nginx/DuctTape는 관리 이전 전까지 지원하지 않는다. CLI 구문 오류와 실제 앱 장애를 구분한다.
+
+원격에서는 restart-posting / restart-filebrowser workflow와 --apply를 사용한다. 기본 계획 모드는 서비스 변경을 하지 않는다.
+
+복귀용 컨테이너가 `always`로 다시 시작돼 8080 포트를 점유한 경우, 등록된 ID/원본 이미지/마운트 동일성 확인 후 stabilize-filebrowser로 복귀용 restart=no·정지 → 기존 독립 컨테이너 시작·healthy를 검사한다. 컨테이너/데이터를 삭제하지 않는다. 새 이관도 복귀 컨테이너의 restart=no를 적용하고 rollback 시 원래 정책을 복원한다. 재부팅 자동복구 전체 검증을 대신하지 않는다.

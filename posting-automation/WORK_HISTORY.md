@@ -165,3 +165,11 @@ feature/evidence-based-project-publication에서 공개 가능한 주장 12개�
 별도 .venv-publication을 구성하는 publication 프로필과 python-pptx 1.0.2를 추가했다. .local/project-publication-20261104-v2에 실제 13장 PPTX(재개방/ZIP/전체 XML 검사)와 원고·스크립트를 생성했다. 전체 unittest 80개 완료(선택 브라우저/PPTX 검사 2개 제외), 발표 환경 테스트 4개 전부 통과. Google Apps Script는 순수 JavaScript 모의 실행으로 13장 생성/중복 방지/미완료 차단/초안 요청 불확실 결과의 재전송 방지를 검증했다. Google 실제 권한·렌더링·Drive 내보내기는 미검증이며 PPTX의 실제 PowerPoint 화면 렌더링도 별도다. 생성물은 Git에서 제외하고 근거 입력/생성기/지침만 커밋한다.
 
 사용자는 보드가 켜져 있고 ./manage.sh restart가 invalid choice라고 보고했다. 이는 현재 CLI에 해당 명령이 없다는 사실이며 서비스 고장/SSH 시간 초과 원인으로 단정하지 않는다. 로컬 Tailscale은 Running이고 대상 피어 Online 표시를 확인했다. 다음 feature에서 대상 프로젝트를 지정하는 재시작을 추가한다.
+
+## 2026-11-04 대상 서비스 재시작 및 복귀 컨테이너 기동 충돌
+
+feature/scoped-service-restart에서 필수 프로젝트 인자를 받는 restart를 추가했다. 관리 전환된 posting-automation/filebrowser만 지원하며 기본 계획 모드, 소유·Compose 경로·단일 컨테이너 검사, no-deps 재시작 및 동일 ID/healthy 확인을 수행한다. 원격 restart workflow도 추가했다. 프로젝트 전체 restart/down은 도입하지 않았다.
+
+SSH 재시도가 성공해 실제 status 작업 8d2d3da75a4749e0aa7cf57bae5a2a3d를 수집했다. 포스팅은 running/healthy였다. FileBrowser는 독립 컨테이너 exited128, 복귀 컨테이너 running/healthy여서 기존 doctor가 이 충돌을 놓친 것을 확인했다. 별도 읽기 전용 검사에서 두 컨테이너의 이미지·마운트가 동일하고 둘 다 restart=always, 독립 컨테이너의 오류는 포트 충돌이었다. 재부팅이 원인인지는 직접 검증하지 않았다.
+
+복귀 컨테이너 정책 해제 누락을 수정하고 stabilize-filebrowser 계획/apply를 추가했다. 현재 ID·소유·이미지·마운트가 일치할 때만 복귀 컨테이너 restart=no/중지 후 독립 컨테이너를 재개하며 자료와 컨테이너를 삭제하지 않는다. 새 이관 및 rollback은 원래 정책을 기록/복원한다. doctor도 등록된 복귀 컨테이너 실행과 독립 컨테이너 미실행을 오류로 표시한다. 실제 적용 결과는 후속 기록으로 남긴다.

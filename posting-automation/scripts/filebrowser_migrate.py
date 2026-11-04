@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import time
+import re
 from uuid import uuid4
 
 from filebrowser_repair import inspect, mount_set
@@ -107,6 +109,7 @@ def operate(root, apply, log, rollback=False):
                 run(['docker','--context','default','stop','file-service'],log,'NEW_STOP')
                 run(['docker','--context','default','rm',state['new_id']],log,'NEW_REMOVE')
                 run(['docker','--context','default','rename',state['old_name'],'file-service'],log,'OLD_RENAME')
+                run(['docker','--context','default','update','--restart='+policy_argument(state.get('old_restart',{})),'file-service'],log,'OLD_POLICY')
                 run(['docker','--context','default','start','file-service'],log,'OLD_START')
                 state['state']='rolled_back'; save_json(journal,state)
                 value['status']='registered_not_migrated'; value['control_state']='rolled_back'; save_json(root/'projects.json',records)
@@ -150,15 +153,16 @@ def operate(root, apply, log, rollback=False):
         normalized=json.loads(run(compose+['config','--format','json'],log,'TARGET_CONFIG'))
         if set(normalized['services'])!={info['service']}:raise ValueError('TARGET_SCOPE: 독립 서비스 범위 오류.')
         old_name='file-service-before-'+uuid4().hex[:10]
-        state={'state':'prepared','old_name':old_name,'old_id':runtime['id'],'source_mounts':list(mount_set(runtime)), 'backup':str(backup),'created':datetime.now(timezone.utc).isoformat()}
+        state={'state':'prepared','old_name':old_name,'old_id':runtime['id'],'old_restart':runtime.get('restart',{}),'source_mounts':list(mount_set(runtime)), 'backup':str(backup),'created':datetime.now(timezone.utc).isoformat()}
         save_json(journal,state)
-        renamed=False; new_id=None
+        renamed=False; disabled_restart=False; new_id=None
         try:
             run(['docker','--context','default','stop','file-service'],log,'SOURCE_STOP')
             hashes={d:copy_archive('file-service',d,backup/(d.lstrip('/')+'.tar'),log) for d in ('/config','/database','/srv')}
             save_json(backup/'verified.json',{'archives':hashes,'source_id':runtime['id']})
             for index,path in enumerate(files):shutil.copyfile(path,backup/('compose-'+str(index)));(backup/('compose-'+str(index))).chmod(0o600)
             state['state']='backup_verified';save_json(journal,state)
+            run(['docker','--context','default','update','--restart=no','file-service'],log,'SOURCE_DISABLE_RESTART');disabled_restart=True
             run(['docker','--context','default','rename','file-service',old_name],log,'SOURCE_PRESERVE');renamed=True
             run(compose+['up','-d','--no-deps','--no-build','--pull','never','--wait','--wait-timeout','90',info['service']],log,'TARGET_START',timeout=180)
             current=container(log,'file-service');new_id=current['id']
@@ -177,6 +181,7 @@ def operate(root, apply, log, rollback=False):
                     run(['docker','--context','default','stop',current['id']],log,'RECOVERY_STOP')
                     run(['docker','--context','default','rm',current['id']],log,'RECOVERY_REMOVE')
                 run(['docker','--context','default','rename',old_name,'file-service'],log,'RECOVERY_RENAME')
+            if disabled_restart:run(['docker','--context','default','update','--restart='+policy_argument(runtime.get('restart',{})),'file-service'],log,'RECOVERY_POLICY')
             run(['docker','--context','default','start','file-service'],log,'RECOVERY_START')
             state['state']='rolled_back';save_json(journal,state)
             raise
@@ -186,3 +191,52 @@ def operate(root, apply, log, rollback=False):
         with (base/'MIGRATION.md').open('a') as stream:stream.write('\n- '+state['created']+' 운영 제어 분리'+' 완료, 웹 검토 대기. 기존 데이터 경로 유지. 복귀 컨테이너: '+old_name+' / 백업: '+str(backup)+'\n')
         history(root,'FileBrowser 운영 제어 분리: healthy·원본 마운트/이미지 유지, 기존 컨테이너 정지 보존. 데이터 이동/웹 기능 검토는 별도.',log)
         log.event('MIGRATION_HEALTHY','독립 FileBrowser healthy. 원본 마운트·이미지 유지, 웹 검토 대기.')
+
+
+def policy_argument(policy):
+    name=policy.get('Name') or 'no'
+    if name not in {'no','always','unless-stopped','on-failure'}:raise ValueError('RESTART_POLICY: 지원하지 않는 정책입니다.')
+    count=policy.get('MaximumRetryCount',0)
+    if not isinstance(count,int) or count<0:raise ValueError('RESTART_POLICY: 잘못된 재시도 횟수입니다.')
+    return name+(':'+str(count) if name=='on-failure' and count else '')
+
+
+def stabilize(root, apply, log):
+    """Fix a preserved-container restart collision without recreating either container."""
+    from manage_server import registry,safe_path,lock
+    with lock(root):
+        records=registry(root);value=records['projects']['filebrowser']
+        journal=safe_path(root/'filebrowser/migration.json');state=json.loads(journal.read_text())
+        if state.get('state')!='switched_pending_review' or not re.fullmatch(r'file-service-before-[0-9a-f]{10}',state.get('old_name','')):
+            raise ValueError('STABILIZE_STATE: 기존 제어 분리 기록과 다릅니다.')
+        current=container(log,'file-service');old=container(log,state['old_name'])
+        if current['id']!=state['new_id'] or old['id']!=state['old_id'] or current['project']!='filebrowser' or old['project']!=value['legacy_compose_project']:
+            raise ValueError('STABILIZE_ID: 대상 컨테이너 소유/ID가 변경됐습니다.')
+        if current['image']!=old['image'] or mount_set(current)!=mount_set(old):
+            raise ValueError('STABILIZE_DATA: 데이터/이미지가 달라 자동 복귀 전환을 중단합니다.')
+        if not old['running'] and old.get('restart',{}).get('Name')=='no' and current['running'] and current['health']=='healthy':
+            log.event('ALREADY_STABLE','복귀 컨테이너 자동 시작 금지·독립 FileBrowser healthy 상태입니다.');return
+        log.event('STABILIZE_PLAN','복귀 컨테이너 자동 시작을 해제·중지하고 기존 독립 FileBrowser만 시작합니다. 데이터/컨테이너를 삭제하지 않습니다.')
+        if not apply:return
+        state.setdefault('old_restart',old.get('restart',{}));state['preserved_restart_state']='pending';save_json(journal,state)
+        run(['docker','--context','default','update','--restart=no',old['id']],log,'PRESERVED_DISABLE_RESTART')
+        if old['running']:run(['docker','--context','default','stop','--time','30',old['id']],log,'PRESERVED_STOP',timeout=60)
+        try:
+            run(['docker','--context','default','start',current['id']],log,'MANAGED_START')
+            deadline=time.monotonic()+90
+            while True:
+                after=container(log,'file-service')
+                if after['id']!=current['id']:raise ValueError('STABILIZE_DRIFT: 독립 컨테이너가 외부에서 변경됐습니다.')
+                if after['running'] and after['health']=='healthy':break
+                if after['health']=='unhealthy' or time.monotonic()>=deadline:raise ValueError('STABILIZE_HEALTH: 독립 서비스 상태 점검 실패.')
+                time.sleep(2)
+        except (ValueError,OSError):
+            state['preserved_restart_state']='check_required';save_json(journal,state)
+            run(['docker','--context','default','stop',current['id']],log,'STABILIZE_FAILED_STOP')
+            run(['docker','--context','default','start',old['id']],log,'STABILIZE_FALLBACK')
+            log.event('STABILIZE_FAILED','독립 서비스 기동 실패. 기존 서비스를 수동 재개했으며 자동 재시작 정책은 해제 상태로 보존합니다.')
+            raise
+        state['preserved_restart_state']='disabled';save_json(journal,state)
+        value['preserved_restart_policy']='no';value['control_state']='switched_pending_review';save_json(root/'projects.json',records)
+        history(root,'FileBrowser 복귀용 컨테이너 자동 재시작 해제·정지, 동일 독립 컨테이너 healthy 확인.',log)
+        log.event('STABILIZED','복귀용 컨테이너 restart=no·정지, 독립 FileBrowser healthy 확인.')
