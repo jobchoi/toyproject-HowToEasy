@@ -18,9 +18,12 @@ WORKFLOWS = {
     'posting-backup': [('posting','backup'),('posting','status')],
     'migrate-filebrowser': [('migrate-filebrowser',),('diagnose-filebrowser',),('doctor',)],
     'rollback-filebrowser': [('rollback-filebrowser',),('diagnose-filebrowser',),('doctor',)],
+    'restart-posting': [('restart','posting-automation'),('posting','status')],
+    'restart-filebrowser': [('restart','filebrowser'),('diagnose-filebrowser',)],
+    'stabilize-filebrowser': [('stabilize-filebrowser',),('diagnose-filebrowser',),('doctor',)],
     'sync-only': [],
 }
-MUTATING = {'repair-filebrowser', 'posting-backup','migrate-filebrowser','rollback-filebrowser'}
+MUTATING = {'repair-filebrowser', 'posting-backup','migrate-filebrowser','rollback-filebrowser','restart-posting','restart-filebrowser','stabilize-filebrowser'}
 
 
 def write_json(path, data):
@@ -128,7 +131,7 @@ def run(root,job_id,workflow,apply=False,sync=False,collect=False):
                             raise ValueError('REMOTE_CAPABILITY_MISSING')
                 for operation in WORKFLOWS[workflow]:
                     arguments=list(operation)
-                    if apply and workflow in MUTATING and arguments in (['repair-filebrowser'],['posting','backup'],['migrate-filebrowser'],['rollback-filebrowser']): arguments.append('--apply')
+                    if apply and workflow in MUTATING and arguments in (['repair-filebrowser'],['posting','backup'],['migrate-filebrowser'],['rollback-filebrowser'],['restart','posting-automation'],['restart','filebrowser'],['stabilize-filebrowser']): arguments.append('--apply')
                     command=[sys.executable,str(manager),'--root',str(root),'--log-dir',str(root/'logs'),*arguments]
                     console.write('[REMOTE_STEP] '+' '.join(operation)+'\n');console.flush()
                     step=subprocess.run(command,stdin=subprocess.DEVNULL,stdout=console,stderr=subprocess.DEVNULL,start_new_session=True)

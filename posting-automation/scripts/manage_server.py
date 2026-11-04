@@ -210,13 +210,21 @@ def check(root, log, doctor=False):
             if result is None or result.returncode:
                 log.event('DOCKER_UNAVAILABLE','컨테이너 목록 조회 불가. Docker 실행/접속 권한을 확인하세요.'); problems += 1
             else:
+                observed={}
                 for line in result.stdout.splitlines()[:100]:
                     try: data = json.loads(line)
                     except ValueError: continue
+                    observed[data.get('Names')]=data.get('State')
                     details = {key:data.get(key) for key in ('Names','Image','State','Status','Ports')}
                     log.event('CONTAINER',str(details.get('Names'))+' / '+str(details.get('State'))+' / '+str(details.get('Status')),**details)
                     if 'unhealthy' in str(details.get('Status')):
                         log.event('UNHEALTHY','상태 점검 실패: '+str(details.get('Names'))+' / 자동 재시작하지 않습니다.'); problems += 1
+                for name,value in records['projects'].items():
+                    preserved=value.get('preserved_container')
+                    if preserved and observed.get(preserved)=='running':
+                        log.event('PRESERVED_RUNNING',name+': 복귀용 컨테이너가 실행 중입니다. 포트 충돌/기동 정책을 확인하세요.');problems+=1
+                    if name=='filebrowser' and value.get('control_state')=='switched_pending_review' and observed.get('file-service')!='running':
+                        log.event('MANAGED_NOT_RUNNING','독립 FileBrowser가 실행 중이 아닙니다.');problems+=1
     return 1 if problems else 0
 
 
@@ -228,6 +236,9 @@ def main():
     init = sub.add_parser('init'); init.add_argument('--apply',action='store_true')
     add = sub.add_parser('add'); add.add_argument('name'); add.add_argument('--source',type=Path); add.add_argument('--apply',action='store_true')
     sub.add_parser('status'); sub.add_parser('doctor')
+    restart = sub.add_parser('restart',help='관리 전환된 프로젝트 하나만 재시작 (프로젝트 이름 필수)')
+    restart.add_argument('project',choices=('posting-automation','filebrowser'))
+    restart.add_argument('--apply',action='store_true')
     prepare = sub.add_parser('prepare-posting')
     prepare.add_argument('--hostname',required=True)
     prepare.add_argument('--apply',action='store_true')
@@ -236,7 +247,7 @@ def main():
     posting.add_argument('--apply',action='store_true')
     handoff = sub.add_parser('use-managed'); handoff.add_argument('--apply',action='store_true')
     sub.add_parser('diagnose-filebrowser')
-    for action in ('migrate-filebrowser','rollback-filebrowser'):
+    for action in ('migrate-filebrowser','rollback-filebrowser','stabilize-filebrowser'):
         migration = sub.add_parser(action); migration.add_argument('--apply',action='store_true')
     fix = sub.add_parser('repair-filebrowser'); fix.add_argument('--apply',action='store_true')
     args = parser.parse_args(); log = None
@@ -244,9 +255,14 @@ def main():
         root = safe_path(args.root)
         log = Log(args.log_dir); print('로그: '+str(log.path),flush=True)
         log.event('START',args.action+' / '+str(root))
-        if args.action in ('migrate-filebrowser','rollback-filebrowser'):
-            from filebrowser_migrate import operate
-            operate(root,args.apply,log,rollback=args.action=='rollback-filebrowser'); result = 0
+        if args.action == 'restart':
+            from service_restart import restart
+            restart(root,args.project,args.apply,log); result = 0
+        elif args.action in ('migrate-filebrowser','rollback-filebrowser','stabilize-filebrowser'):
+            from filebrowser_migrate import operate, stabilize
+            if args.action=='stabilize-filebrowser':stabilize(root,args.apply,log)
+            else:operate(root,args.apply,log,rollback=args.action=='rollback-filebrowser')
+            result = 0
         elif args.action == 'repair-filebrowser':
             from filebrowser_repair import repair
             repair(root,args.apply,log); result = 0

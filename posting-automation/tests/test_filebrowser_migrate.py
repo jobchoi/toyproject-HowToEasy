@@ -98,5 +98,30 @@ class MigrationTests(unittest.TestCase):
         with a,b,c,d:migration.operate(self.root,True,self.log)
         self.calls.clear()
         with patch.object(migration,'container',return_value=self.new),patch.object(migration,'run',side_effect=self.fake):migration.operate(self.root,True,self.log,rollback=True)
-        self.assertEqual([code for _,code in self.calls],['NEW_STOP','NEW_REMOVE','OLD_RENAME','OLD_START'])
+        self.assertEqual([code for _,code in self.calls],['NEW_STOP','NEW_REMOVE','OLD_RENAME','OLD_POLICY','OLD_START'])
         self.assertFalse(any('-v' in args for args,_ in self.calls))
+
+    def test_preserved_restart_collision_is_repaired_without_recreation(self):
+        a,b,c,d=self.contexts()
+        with a,b,c,d:migration.operate(self.root,True,self.log)
+        state=json.loads((self.root/'filebrowser/migration.json').read_text())
+        state['old_name']='file-service-before-1234567890';save_json(self.root/'filebrowser/migration.json',state)
+        old=dict(self.runtime,restart={'Name':'always','MaximumRetryCount':0})
+        current=dict(self.new,running=False,restart={'Name':'always','MaximumRetryCount':0})
+        self.calls.clear()
+        def lookup(log,name):
+            if name!='file-service':return old
+            return dict(current,running=True) if any(code=='MANAGED_START' for _,code in self.calls) else current
+        with patch.object(migration,'container',side_effect=lookup),patch.object(migration,'run',side_effect=self.fake):migration.stabilize(self.root,True,self.log)
+        self.assertEqual([code for _,code in self.calls],['PRESERVED_DISABLE_RESTART','PRESERVED_STOP','MANAGED_START'])
+        self.assertFalse(any('rm' in args or 'up' in args for args,_ in self.calls))
+        self.assertEqual(json.loads((self.root/'filebrowser/migration.json').read_text())['preserved_restart_state'],'disabled')
+
+    def test_stabilization_refuses_changed_data_before_mutation(self):
+        a,b,c,d=self.contexts()
+        with a,b,c,d:migration.operate(self.root,True,self.log)
+        old=deepcopy(self.runtime);old['mounts'][0]['Source']='/changed/data'
+        self.calls.clear()
+        with patch.object(migration,'container',side_effect=[self.new,old]),patch.object(migration,'run',side_effect=self.fake):
+            with self.assertRaisesRegex(ValueError,'STABILIZE_DATA'):migration.stabilize(self.root,True,self.log)
+        self.assertFalse(self.calls)
