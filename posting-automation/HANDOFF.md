@@ -48,3 +48,7 @@ remote_server.py는 migrate/rollback-filebrowser, repair, posting-backup, status
 `./manage.sh restart`만으로는 실행하지 않는다. `./manage.sh restart posting-automation --apply` 또는 `./manage.sh restart filebrowser --apply`로 대상을 지정한다. 기본은 계획 모드다. 빌드/재생성 없이 소유·ID·healthy를 검사하며 Nginx/DuctTape는 관리 이전 전 미지원이다. 명령의 모의 검증과 사용자 실제 실행을 구분한다.
 
 원격 stabilize-filebrowser는 새/복귀 ID·이미지·마운트가 일치할 때만 복귀용 자동 기동을 해제한다. doctor도 복귀 컨테이너 running과 독립 서비스 미실행을 문제로 표시한다. rollback은 기존 bind 경로에 한해서 원래 정책을 복원한다. 전체 회귀 87개 완료(선택 브라우저/PPTX 2개 제외), 발표 전용 검사 4개 통과. 최신 발표 재생성 결과는 WORK_HISTORY 참조.
+
+## 최신 접속 검증 보완
+
+이전 stabilize 성공은 내부 healthy만 확인해 외부 연결을 놓쳤다. 사용자 접속 불가 보고 후 실제 NetworkSettings.Networks/Ports가 비어 있고 호스트8080이 거부되는 것을 확인했다. 9af1bdb의 repair-filebrowser-network로 기존 네트워크 endpoint만 복구(작업 5e1a82d7730b4c4d98f90e8bb8544c8e), 동일 ID/데이터·호스트 HTTP200·doctor0을 확인했다. 작업 PC의 HTTPS10000 / 및 /health도 TLS 검증 상태에서 HTTP200이다. 로그인/파일 쓰기 확인과 전체 서버 정리는 여전히 별도다. 현재 관리 코드 기준은 9af1bdb이며 최종 문서 갱신은 추가 로컬 커밋이다. 전체 회귀92개 완료(선택2개 제외).

@@ -75,11 +75,12 @@
       "id": "C07",
       "status": "verified_historical",
       "title": "FileBrowser 상태 점검과 운영 제어 분리",
-      "text": "기존 상태 검사 실패는 검증한 loopback 검사로 수정했다. 데이터·이미지를 유지하며 운영 Compose를 분리했다. 재점검에서는 보존한 옛 컨테이너의 always 정책으로 포트 충돌이 발생한 것을 확인해 자동 기동을 해제하고 독립 서비스를 복구했다. 데이터 폴더 이전은 아직 남아 있다.",
+      "text": "상태 검사 실패를 수정하고 기존 데이터·이미지를 유지하며 운영 Compose를 분리했다. 이후 보존 컨테이너의 자동 기동에 따른 포트 충돌과 독립 컨테이너의 네트워크 누락을 차례로 확인해 복구했다. 내부 healthy에 더해 호스트와 실제 HTTPS 주소의 HTTP 200까지 검증했다. 데이터 폴더 이전은 아직 남아 있다.",
       "evidence": [
         "posting-automation/scripts/filebrowser_repair.py",
         "posting-automation/scripts/filebrowser_migrate.py",
-        "posting-automation/WORK_HISTORY.md"
+        "posting-automation/WORK_HISTORY.md",
+        "posting-automation/scripts/filebrowser_network.py"
       ]
     },
     {

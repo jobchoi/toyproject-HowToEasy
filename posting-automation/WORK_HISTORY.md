@@ -187,3 +187,7 @@ feature/verified-recovery-handoff에서 실제 복구 결과로 근거 원고와
 사용자가 포트 변경 여부와 접속 불가를 보고했다. 실제 SSH 검사에서 Tailscale 10000→8080은 유지됐지만 호스트 8080 연결이 거부됐다. 독립 FileBrowser는 내부 healthy이나 NetworkSettings.Networks/Ports가 모두 비어 있고 HostConfig에는 기존 my-server_default/8080 설정이 남아 있었다. 내부 건강 상태만 확인한 이전 복구 검증이 부족했음을 확인했다.
 
 feature/filebrowser-network-recovery에서 대상 ID/이미지/마운트/기존 네트워크 성격을 검증한 뒤 누락된 endpoint만 연결하는 계획/apply 도구와 원격 workflow를 추가했다. 실제 endpoint/포트 공개/호스트 HTTP200까지 통과해야 완료로 기록하며 docker rm/up 또는 Tailscale 변경은 없다. stabilize/doctor도 내부 healthy만으로 성공을 선언하지 않도록 보완했다. 관련 FileBrowser 검사 19개 통과, 실제 적용은 다음 기록과 구분한다.
+
+## 실제 외부 연결 복구 검증
+
+전체 회귀 92개 완료(선택 2개 제외), 관련 FileBrowser 검사 19개 통과 후 9af1bdb를 코드 전용 bundle로 서버 develop에 fast-forward했다. 계획 6b4dc7978b5947009a8c5aa58f4e9eab에서 endpoint 누락을 doctor가 검출했다. 실제 복구 5e1a82d7730b4c4d98f90e8bb8544c8e가 원래 네트워크 endpoint 연결·동일 컨테이너/마운트 유지·호스트8080 HTTP200·doctor0으로 성공했다. 이후 작업 PC에서 사용자의 HTTPS10000 주소를 TLS 검증을 유지해 요청했고 /health HTTP200(text/plain), / HTTP200(text/html)를 직접 확인했다. 로그인/파일 쓰기를 확인한 것은 아니다. Tailscale/포트 번호/자료/컨테이너 생성은 변경하지 않았다. GitHub push는 기존 인증 문제가 남아 있어 로컬 commit 및 서버 bundle 적용을 구분한다.

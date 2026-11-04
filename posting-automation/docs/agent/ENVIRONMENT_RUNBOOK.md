@@ -42,3 +42,5 @@ unknown/running 원격 작업은 동일 ID collect로 조회한다. 새 ID로 �
 구버전 관리기에는 restart가 없고 신버전도 프로젝트 이름이 필수다. `./manage.sh restart posting-automation`은 계획, --apply를 붙이면 해당 서비스만 재시작한다. 전체 Docker 재시작으로 CLI 구문 오류를 해결하지 않는다.
 
 복귀용 컨테이너는 rename/정지만으로 보존하면 always 정책으로 재기동해 포트를 점유할 수 있다. 도구는 원래 정책을 기록하고 해당 대상에만 restart=no를 적용한다. doctor에 PRESERVED_RUNNING 또는 MANAGED_NOT_RUNNING이 나오면 stabilize-filebrowser 계획으로 ID/이미지/마운트부터 확인한다. 데이터 경로가 다르면 자동 전환하지 않는다.
+
+내부 healthy인데 실제 접속이 거부되면 Tailscale 매핑 → 호스트 HTTP → 실제 Docker 공개 포트/endpoint를 순서대로 확인한다. PortBindings 설정이 존재해도 NetworkSettings.Ports/Networks가 비어 있을 수 있다. 이 경우 새 도구 repair-filebrowser-network가 원래 네트워크 연결만 복구한다. 복구 후 호스트뿐 아니라 사용자 HTTPS 주소도 TLS 검증 상태에서 확인한다.
