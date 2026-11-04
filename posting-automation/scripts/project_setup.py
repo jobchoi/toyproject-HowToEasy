@@ -22,14 +22,15 @@ def requirement_inputs(root,path,seen=None):
 def main():
     parser=argparse.ArgumentParser(description='독립 개발/테스트 환경 자동 구성')
     parser.add_argument('--project',type=Path,default=Path(__file__).resolve().parents[1])
-    parser.add_argument('--profile',choices=('ui','dev','test'),default='ui')
+    parser.add_argument('--profile',default='ui')
     parser.add_argument('--test',action='store_true')
     args=parser.parse_args()
     if args.test and args.profile=='ui':args.profile='test'
     root=args.project.resolve()
     config=json.loads((root/'project-environment.json').read_text(encoding='utf-8'))
     if sys.version_info[:2]<tuple(config['python_minimum']):raise SystemExit('Python 3.11 이상이 필요합니다.')
-    target=root/config['environment']
+    if args.profile not in config['profiles']:raise ValueError('알 수 없는 환경 프로필입니다.')
+    target=root/config.get('profile_environments',{}).get(args.profile,config['environment'])
     if target.is_symlink() or target.resolve()==root or not target.resolve().is_relative_to(root):raise SystemExit('가상환경은 프로젝트 내부의 독립 경로를 사용해야 합니다.')
     requirements=root/config['profiles'][args.profile]
     signature=hashlib.sha256(json.dumps([args.profile,sys.version,platform.machine(),*requirement_inputs(root,requirements)]).encode()).hexdigest()
@@ -47,6 +48,7 @@ def main():
     if args.test or args.profile=='test':
         print('3/3 테스트 실행 (외부 계정/브라우저 실연결 없음)',flush=True)
         subprocess.run([str(python),*config['test_command']],cwd=root,check=True)
+    elif args.profile=='publication':print('3/3 발표 환경 준비 완료: .venv-publication/bin/python scripts/build_publication.py --pptx --output <새 폴더>',flush=True)
     else:print('3/3 준비 완료. 실행: bash scripts/run_ui.sh',flush=True)
     return 0
 

@@ -1,10 +1,24 @@
 {
-  "python_minimum": [3, 11],
+  "python_minimum": [
+    3,
+    11
+  ],
   "environment": ".venv-ui",
   "profiles": {
     "ui": "requirements-ui.txt",
     "dev": "requirements-dev.txt",
-    "test": "requirements-dev.txt"
+    "test": "requirements-dev.txt",
+    "publication": "requirements-publication.txt"
   },
-  "test_command": ["-m", "unittest", "discover", "-s", "tests", "-v"]
+  "test_command": [
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-v"
+  ],
+  "profile_environments": {
+    "publication": ".venv-publication"
+  }
 }
