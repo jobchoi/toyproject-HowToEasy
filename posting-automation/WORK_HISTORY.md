@@ -153,3 +153,7 @@ remote_server.py/remote_job.py는 허용된 workflow, 선택적 push/원격 fast
 커밋 c2e64e9 push는 에이전트 HTTPS 인증 부재로 실패했다. 기존 승인 범위의 코드 배포를 계속하기 위해 코드 전용 Git bundle을 전달하고 서버의 깨끗한 develop/c915505를 확인한 후 지정 커밋으로만 fast-forward했다. 실제 계획 검증 성공 후 작업 7bdee1d412f64fd695eab8fed09439b8로 FileBrowser 제어 분리·마운트 백업 실제 복원 검증·원본 컨테이너 정지 보존·healthy/doctor 0을 확인했다. 원격 workflow 회귀 9개도 통과했다.
 
 웹 검토 요청에 사용자가 /filebrowser 404를 보고했다. 서버 검사에서 해당 경로는 DuctTape로 전달되고 실제 FileBrowser 8080은 HTTP 200임을 확인했다. 독립 tailnet 10000 Serve 추가는 서버가 권한 부족으로 거절했고 sudo -n도 비밀번호를 요구해 라우팅은 변경되지 않았다. 이는 자동 승인 검토 거절이 아니라 서버 계정 권한 문제다. 기존 443/8443/Funnel은 유지했다. Nginx 읽기 전용 조사까지 진행했으며 웹 검토/접속 해결 전 추가 서비스 변경과 데이터 이동은 중단했다.
+
+## 2026-11-04 환경 재현·인수인계 feature
+
+사용자 요청에 따라 feature/repeatable-agent-environment에서 작업했다. agent_environment.py는 표준 라이브러리로 도구/가상환경/Git 상태와 인증 환경의 존재 여부만 확인하고, 원격 SSH는 명시한 경우에만 제한 시간 내 점검한다. 비밀값/SSH stderr 미출력 및 timeout 실패 분류 테스트 2개 통과. 반복 setup 원본·Git flow·인수인계·현재 서버 미확인 경계를 ENVIRONMENT_RUNBOOK과 HANDOFF에 정리했다. 서버 SSH는 ConnectTimeout=8 시간 초과로 실패해 이번 재개에서 운영 변경은 없다. 과거 서버 정상 상태를 현재 상태로 기록하지 않는다. 게시 대상 두 URL은 사용자에게 받았으며 서버 정리 완료 전에는 실제 게시하지 않는다.
