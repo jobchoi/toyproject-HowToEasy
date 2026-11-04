@@ -36,3 +36,9 @@ GitHub push 인증과 라즈 SSH 인증은 별개다. IDE 터미널의 인증이
 443 DuctTape / 8443 포스팅 / 10000 FileBrowser의 역할을 보존한다. 10000은 사용자가 2026-11-02 sudo 설정 후 접속 성공을 보고했고 당시 서버에서도 설정을 확인했다. 이것은 재부팅·로그인·파일 쓰기 검증을 뜻하지 않는다.
 
 unknown/running 원격 작업은 동일 ID collect로 조회한다. 새 ID로 변경 명령을 반복하지 않는다. sudo 권한 부족을 해결하기 위해 비밀번호 파일·sshpass·호스트키 검증 해제를 도입하지 않는다.
+
+## 반복 장애: restart와 보존 컨테이너
+
+구버전 관리기에는 restart가 없고 신버전도 프로젝트 이름이 필수다. `./manage.sh restart posting-automation`은 계획, --apply를 붙이면 해당 서비스만 재시작한다. 전체 Docker 재시작으로 CLI 구문 오류를 해결하지 않는다.
+
+복귀용 컨테이너는 rename/정지만으로 보존하면 always 정책으로 재기동해 포트를 점유할 수 있다. 도구는 원래 정책을 기록하고 해당 대상에만 restart=no를 적용한다. doctor에 PRESERVED_RUNNING 또는 MANAGED_NOT_RUNNING이 나오면 stabilize-filebrowser 계획으로 ID/이미지/마운트부터 확인한다. 데이터 경로가 다르면 자동 전환하지 않는다.

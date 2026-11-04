@@ -24,11 +24,11 @@ posting_tool은 자료 가져오기·규칙 기반 원고 구성·파일 버전 
 - DuctTape/Nginx는 아직 기존 my-server 운영이다. Nginx mount 겹침은 당시 없었다. DuctTape의 읽기 전용 /media에는 약 1.1GB 입력 자료가 있어 외부 의존성 확인 없이 이동하지 않는다.
 - Tailscale은 443→8000(DuctTape, 기존 Funnel), 8443→8010(포스팅), 10000→8080(FileBrowser, tailnet 전용). 사용자는 sudo 설정 후 FileBrowser 페이지 접속 성공을 보고했다. 로그인/파일 쓰기/재부팅 검증은 따로 남는다.
 
-2026-11-04 재개: SSH ConnectTimeout=8로 접속 시간 초과. 서버 상태/자료/라우팅은 변경하지 않았다. 이는 현재 서버가 정상이라는 증거도, 서버 고장 원인 확정도 아니다. 연결 복구 후 현재 지침/등록표/Compose/mount/백업/복구를 다시 읽는다. 미접속 중에 모의 테스트를 실서버 완료로 기록하지 않는다.
+2026-11-04 재개: 처음 SSH 시간 초과 후 재연결 성공. 실제 status에서 독립 FileBrowser exited128·복귀용 running을 발견했다. 두 컨테이너의 이미지/마운트 동일, restart=always, 새 컨테이너의 포트 충돌을 확인했다. c5373f3을 코드 전용 bundle로 서버 develop에 fast-forward한 뒤 작업 1ccad4e005cd429fa49195d085097d72로 복귀용 restart=no·정지 → 동일 독립 컨테이너 healthy 및 doctor 0을 실제 확인했다. 포스팅/DuctTape healthy, Nginx running이며 재부팅 원인은 확정하지 않았다. 처음 SSH 실패도 원인을 단정하지 않는다. 현재 코드는 GitHub push 미완료로 사용자 인증 터미널에서 push가 필요하다.
 
 ## 남은 운영 작업
 
-1. SSH 연결 회복 및 읽기 전용 최신 진단.
+1. 연결은 회복했고 최근 실제 진단/복구는 위 기록 참고. 다음 실행 전 다시 실시간 상태 확인.
 2. FileBrowser 로그인/파일 열기·쓰기 확인 후 데이터 경로 복사·권한/소유자/백업·복귀 도구 구현 및 검증. 오래된 원본 DB로 복귀해 새 변경을 잃지 않도록 별도 데이터 복구 설계가 필요하다.
 3. Nginx, DuctTape를 한 프로젝트씩 분리. 원본 경로·공유 Compose/네트워크를 유지하며 외부 마운트 의존성을 확인한다.
 4. 최종 서비스/접속/백업/인수인계 확인. 원본 및 복귀 컨테이너의 삭제는 별도 승인 전 하지 않는다.
@@ -42,3 +42,9 @@ remote_server.py는 migrate/rollback-filebrowser, repair, posting-backup, status
 블로그·발표 결과의 생성/로컬 검증/Google 실행/게시를 구분해 기록한다. 현재 단계와 feature 통합 커밋은 WORK_HISTORY와 Git 이력을 확인한다.
 
 게시/발표 구현: docs/publication/project-story.json의 공개 가능한 주장/근거에서 scripts/build_publication.py가 MD/플랫폼 HTML/발표 HTML/JSON/Apps Script와 선택적 PPTX를 생성한다. 별도 publication 프로필은 .venv-publication을 사용한다. 현재 publication_ready=false이고 서버 차단 사실이 남아 있어 Blogger 초안 생성이 차단된다. 티스토리는 종료된 Open API 대신 HTML 전달이다. 기능 지침은 docs/publication/README.md, Google 템플릿은 operations/google에 있다. 실제 클라우드 실행과 발행은 미실행이다.
+
+## 재시작 명령과 최근 검증
+
+`./manage.sh restart`만으로는 실행하지 않는다. `./manage.sh restart posting-automation --apply` 또는 `./manage.sh restart filebrowser --apply`로 대상을 지정한다. 기본은 계획 모드다. 빌드/재생성 없이 소유·ID·healthy를 검사하며 Nginx/DuctTape는 관리 이전 전 미지원이다. 명령의 모의 검증과 사용자 실제 실행을 구분한다.
+
+원격 stabilize-filebrowser는 새/복귀 ID·이미지·마운트가 일치할 때만 복귀용 자동 기동을 해제한다. doctor도 복귀 컨테이너 running과 독립 서비스 미실행을 문제로 표시한다. rollback은 기존 bind 경로에 한해서 원래 정책을 복원한다. 전체 회귀 87개 완료(선택 브라우저/PPTX 2개 제외), 발표 전용 검사 4개 통과. 최신 발표 재생성 결과는 WORK_HISTORY 참조.

@@ -173,3 +173,11 @@ feature/scoped-service-restart에서 필수 프로젝트 인자를 받는 restar
 SSH 재시도가 성공해 실제 status 작업 8d2d3da75a4749e0aa7cf57bae5a2a3d를 수집했다. 포스팅은 running/healthy였다. FileBrowser는 독립 컨테이너 exited128, 복귀 컨테이너 running/healthy여서 기존 doctor가 이 충돌을 놓친 것을 확인했다. 별도 읽기 전용 검사에서 두 컨테이너의 이미지·마운트가 동일하고 둘 다 restart=always, 독립 컨테이너의 오류는 포트 충돌이었다. 재부팅이 원인인지는 직접 검증하지 않았다.
 
 복귀 컨테이너 정책 해제 누락을 수정하고 stabilize-filebrowser 계획/apply를 추가했다. 현재 ID·소유·이미지·마운트가 일치할 때만 복귀 컨테이너 restart=no/중지 후 독립 컨테이너를 재개하며 자료와 컨테이너를 삭제하지 않는다. 새 이관 및 rollback은 원래 정책을 기록/복원한다. doctor도 등록된 복귀 컨테이너 실행과 독립 컨테이너 미실행을 오류로 표시한다. 실제 적용 결과는 후속 기록으로 남긴다.
+
+## 2026-11-04 실제 복구 검증 및 공개 기록 갱신
+
+전체 회귀 87개 완료(선택 2개 제외) 후 c5373f3을 검증한 코드 전용 bundle로 서버의 깨끗한 develop에 fast-forward했다. GitHub push는 HTTPS 인증 부재로 실패했다. stabilize 계획 작업 3d156f0b964742dd909690cd76c28813에서 소유/데이터 일치를 확인하고 doctor가 복귀용 실행 문제를 검출했다. 실제 적용 1ccad4e005cd429fa49195d085097d72는 복귀용 restart=no·정지, 동일 독립 FileBrowser healthy, doctor 0으로 성공했다. 데이터/컨테이너 삭제와 다른 서비스 재시작은 없었다.
+
+feature/verified-recovery-handoff에서 실제 복구 결과로 근거 원고와 발표 내용을 갱신한다. SSH가 여전히 차단됐다는 중간 기록을 최신 상태로 남기지 않고, 서버 전체 이전 미완료는 유지한다. 로그인/파일 쓰기 확인은 사용자에게 요청했고 실제 게시/Google 계정 실행은 미완료다.
+
+공개 기록 갱신 후 .local/project-publication-20261104-current에 최신 원고/Google 스크립트/13장 PPTX를 재생성했다. 발표 환경 검사 4개 전부 통과, 순수 JavaScript 모의 검사 재통과. SSH가 계속 차단돼 있다는 옛 중간 문장은 갱신했고 남은 서버 정리·실게시·Google 실실행 미완료는 유지했다. feature/verified-recovery-handoff로 실제 복구와 반복 장애 예방 지침을 기록하고, PUSH_STANDBY에 인증된 사용자 터미널의 push 및 서버 ff-only 갱신 절차를 정리했다. 현재 생성 자료는 Git 제외이며 계정 게시를 하지 않았다.

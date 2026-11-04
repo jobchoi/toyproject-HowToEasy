@@ -43,3 +43,7 @@ projects.json에 legacy_compose_overrides가 있으면 원본 Compose와 함께 
 ## 원격 실행과 불확실한 결과
 
 remote_server.py를 통한 원격 작업은 ~/web-server/remote-runs/<작업ID>/에 결과를 남긴다. 결과가 unknown/running이면 동일 ID의 collect로 조회하고 새 ID로 변경 명령을 즉시 반복하지 않는다. 연결 종료는 원격 실패/취소를 뜻하지 않는다. 인증 실패를 우회하기 위해 비밀번호 저장, sshpass, 호스트키 검증 해제를 도입하지 않는다. 플랫폼의 실행 승인은 별도 경계다.
+
+## 복귀용 컨테이너와 재시작
+
+복귀용 컨테이너의 always 정책을 유지한 채 rename/정지만 하지 않는다. 원래 정책을 기록하고 restart=no를 적용하며 실제 rollback 시 정책을 복원한다. 보존 컨테이너가 실행 중이면 정상 이관으로 간주하지 않는다. stabilize-filebrowser는 ID/이미지/마운트 동일 확인이 전제이며 데이터 이전 후 기존 기록으로 강제 실행하지 않는다. 프로젝트별 restart는 관리 전환된 posting-automation/filebrowser만 지원하고 대상 필수·기본 계획·명시적 apply다.
