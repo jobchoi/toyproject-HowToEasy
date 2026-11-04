@@ -6,6 +6,7 @@ from ..models import Article
 
 class Capability(str, Enum):
     EXPORT = 'export'
+    PREPARE_EDITOR = 'prepare_editor'
     CREATE_DRAFT = 'create_draft'
 
 
@@ -36,6 +37,16 @@ class Publisher(ABC):
         if not reviewed:
             raise ValueError('현재 원고를 검토한 뒤 초안 작업을 요청하세요.')
         return self._create_draft(article)
+
+    def prepare_editor(self, article: Article, *, reviewed: bool = False):
+        if Capability.PREPARE_EDITOR not in self.capabilities:
+            raise UnsupportedOperation(f'{self.name}: 편집기 전달은 지원하지 않습니다.')
+        if reviewed is not True:
+            raise ValueError('현재 원고를 검토한 뒤 편집기 전달을 요청하세요.')
+        return self._prepare_editor(article)
+
+    def _prepare_editor(self, article: Article):
+        raise UnsupportedOperation(f'{self.name}: 편집기 전달 구현이 없습니다.')
 
     def _create_draft(self, article: Article) -> DraftResult:
         raise UnsupportedOperation(f'{self.name}: 초안 업로드 구현이 없습니다.')
@@ -75,4 +86,7 @@ def builtin_registry() -> PublisherRegistry:
     registry = PublisherRegistry()
     registry.register(ManualExportPublisher())
     registry.register(MockPublisher())
+    from .editor import TistoryEditorPublisher,BloggerEditorPublisher
+    registry.register(TistoryEditorPublisher())
+    registry.register(BloggerEditorPublisher())
     return registry

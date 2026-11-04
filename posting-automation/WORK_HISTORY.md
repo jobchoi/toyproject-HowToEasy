@@ -195,3 +195,9 @@ feature/filebrowser-network-recovery에서 대상 ID/이미지/마운트/기존 
 ## FileBrowser 계정 조회 기능
 
 사용자가 계정 확인을 요청했다. 실행 중 DB에 대한 기존 CLI 조회는 실패했으며 계정을 추측하거나 비밀번호를 재설정하지 않았다. feature/filebrowser-account-inspection에서 원본 DB의 일관된 private 사본/해시 검증·원래 실행 상태 재개·네트워크 없는 임시 컨테이너에서 사용자명만 조회하는 명령을 추가했다. 사본 생성 실패 시 서비스 재개, 원본 보존, 해시/비밀값 미출력 검사를 포함한 4개 테스트 통과. 실제 계정 조회 결과는 별도 실행 후 기록한다.
+
+## 계정 실조회 및 플랫폼 전달 UI
+
+실제 filebrowser-accounts 작업 24b97a68b32b496e892f22b4e2f4291d 성공: DB private 사본/해시 확인, 서비스/HTTP 재개, 네트워크 없는 helper에서 계정명만 조회했다. 원본 비밀번호/권한은 변경하지 않았고 평문 비밀번호를 조회했다고 주장하지 않는다. 이 단계 배포 커밋은 043cbb5다.
+
+feature/tistory-editor-delivery에서 공통 EditorPublisher를 상속한 Tistory/Blogger 모듈과 PREPARE_EDITOR 기능을 추가했다. 검토한 저장 버전의 전달 자료만 생성하고 remote_saved=false를 유지한다. 제목/서식 HTML/소스 복사, 편집기 열기, 클립보드 거부 fallback, 사진 별도 첨부, 수정 후 무효화를 UI에 연결했다. API/어댑터 검사 4개와 실제 로컬 Chromium에서 리뷰/전환/복사 fallback/모바일/페이지 오류 없음 검증을 통과했다. 외부 로그인과 OS 클립보드는 사용하지 않았다. plugin-management 스킬로 브라우저 통합을 탐색했고 TinyFish를 발견/제안했으나 설치·계정 연결 확인은 없다. 사용자가 보고한 Google 업로드 시험 경로도 아직 응답 대기이며 실제 플랫폼 업로드를 수행했다고 기록하지 않는다.
