@@ -7,3 +7,6 @@
 - 원격 보고서와 실제 실행 검증을 구분한다. 새 스크립트는 기본 계획 모드, 명시적 apply, 기존 파일 보존, 프로젝트 단위 동작, 진단 로그를 제공한다.
 - 기존 서비스 변경 전 실제 Compose·mount·작업 경로·백업/복구를 확인한다. 전체 down/prune/볼륨 삭제/기존 Tailscale 라우팅 변경을 기본 동작으로 넣지 않는다.
 - 검증: posting-automation/.venv-ui/bin/python -m unittest discover -s posting-automation/tests -v. 네이버 실계정 시험은 보류 상태이며 테스트에서 외부 게시하지 않는다.
+- 2026-11-04 이후 새 단계는 feature/<단계>에서 구현·검증·문서화하고 develop에 --no-ff로 통합해 이력을 남긴다. 운영 기준 develop과 작업 feature를 구분한다.
+- 반복 환경 작업은 기존 setup/점검 유틸리티로 재현 가능하게 만들고 posting-automation/docs/agent/ENVIRONMENT_RUNBOOK.md에 기록한다.
+- 공개 글·발표 자료는 확인된 증거와 연결한다. 구현/모의 테스트/실서버/사용자 보고/계획을 구분하고 인증정보·원고·서버 조사 원문을 공개 산출물에 포함하지 않는다.

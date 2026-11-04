@@ -404,3 +404,12 @@ File Browser 상태 검사 수정은 디렉터리 이전 완료와 구분한다.
 - [ ] 전용 10000 Serve 추가: 서버 설정 권한 부족으로 미실행, 사용자 sudo 1회 필요
 - [ ] 로그인·목록·파일 열기 확인 후 데이터 이동 및 다음 서비스 전환
 - [ ] 로컬 커밋 GitHub push (에이전트 HTTPS 인증 부재, 서버에는 코드 bundle 적용)
+
+## 2026-11-04 재개와 재현 가능한 기록
+
+- [x] feature/repeatable-agent-environment: 네트워크 기본 비활성 환경 doctor·민감값 제외·SSH timeout 검사
+- [x] 반복 설정 runbook과 최신 HANDOFF를 단일 재개 지침으로 정리
+- [ ] 실서버 운영 정리 재개: 현재 SSH 접속 시간 초과, 서비스 변경 없음
+- [ ] 공개 가능한 근거 목록과 Blogger/티스토리 원고 생성·검증
+- [ ] Google Slides 생성·PPTX 내보내기 스크립트와 로컬 발표 자료
+- [ ] 서버 최종 정리 확인 후 실제 플랫폼 게시 및 Google 계정 실행
