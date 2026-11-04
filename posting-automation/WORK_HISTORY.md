@@ -181,3 +181,9 @@ SSH 재시도가 성공해 실제 status 작업 8d2d3da75a4749e0aa7cf57bae5a2a3d
 feature/verified-recovery-handoff에서 실제 복구 결과로 근거 원고와 발표 내용을 갱신한다. SSH가 여전히 차단됐다는 중간 기록을 최신 상태로 남기지 않고, 서버 전체 이전 미완료는 유지한다. 로그인/파일 쓰기 확인은 사용자에게 요청했고 실제 게시/Google 계정 실행은 미완료다.
 
 공개 기록 갱신 후 .local/project-publication-20261104-current에 최신 원고/Google 스크립트/13장 PPTX를 재생성했다. 발표 환경 검사 4개 전부 통과, 순수 JavaScript 모의 검사 재통과. SSH가 계속 차단돼 있다는 옛 중간 문장은 갱신했고 남은 서버 정리·실게시·Google 실실행 미완료는 유지했다. feature/verified-recovery-handoff로 실제 복구와 반복 장애 예방 지침을 기록하고, PUSH_STANDBY에 인증된 사용자 터미널의 push 및 서버 ff-only 갱신 절차를 정리했다. 현재 생성 자료는 Git 제외이며 계정 게시를 하지 않았다.
+
+## 2026-11-04 사용자 접속 불가 후 외부 endpoint 검증 보완
+
+사용자가 포트 변경 여부와 접속 불가를 보고했다. 실제 SSH 검사에서 Tailscale 10000→8080은 유지됐지만 호스트 8080 연결이 거부됐다. 독립 FileBrowser는 내부 healthy이나 NetworkSettings.Networks/Ports가 모두 비어 있고 HostConfig에는 기존 my-server_default/8080 설정이 남아 있었다. 내부 건강 상태만 확인한 이전 복구 검증이 부족했음을 확인했다.
+
+feature/filebrowser-network-recovery에서 대상 ID/이미지/마운트/기존 네트워크 성격을 검증한 뒤 누락된 endpoint만 연결하는 계획/apply 도구와 원격 workflow를 추가했다. 실제 endpoint/포트 공개/호스트 HTTP200까지 통과해야 완료로 기록하며 docker rm/up 또는 Tailscale 변경은 없다. stabilize/doctor도 내부 healthy만으로 성공을 선언하지 않도록 보완했다. 관련 FileBrowser 검사 19개 통과, 실제 적용은 다음 기록과 구분한다.

@@ -87,7 +87,7 @@ def copy_archive(container, destination, archive, log):
 
 
 def container(log, name):
-    template='{"id":{{json .Id}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"running":{{json .State.Running}},"health":{{with .State.Health}}{{json .Status}}{{else}}null{{end}},"image":{{json .Image}},"config":{{json .Config}},"ports":{{json .HostConfig.PortBindings}},"restart":{{json .HostConfig.RestartPolicy}},"mounts":{{json .Mounts}},"networks":{{json .NetworkSettings.Networks}}}'
+    template='{"id":{{json .Id}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"running":{{json .State.Running}},"health":{{with .State.Health}}{{json .Status}}{{else}}null{{end}},"image":{{json .Image}},"config":{{json .Config}},"ports":{{json .HostConfig.PortBindings}},"actual_ports":{{json .NetworkSettings.Ports}},"network_mode":{{json .HostConfig.NetworkMode}},"restart":{{json .HostConfig.RestartPolicy}},"mounts":{{json .Mounts}},"networks":{{json .NetworkSettings.Networks}}}'
     return json.loads(run(['docker','--context','default','inspect','--format',template,name],log,'MIGRATION_INSPECT'))
 
 
@@ -215,6 +215,8 @@ def stabilize(root, apply, log):
         if current['image']!=old['image'] or mount_set(current)!=mount_set(old):
             raise ValueError('STABILIZE_DATA: 데이터/이미지가 달라 자동 복귀 전환을 중단합니다.')
         if not old['running'] and old.get('restart',{}).get('Name')=='no' and current['running'] and current['health']=='healthy':
+            from filebrowser_network import endpoint_ready, local_health
+            if not endpoint_ready(current) or not local_health():raise ValueError('STABILIZE_ENDPOINT: 내부 상태만 정상입니다. repair-filebrowser-network로 외부 연결을 검증하세요.')
             log.event('ALREADY_STABLE','복귀 컨테이너 자동 시작 금지·독립 FileBrowser healthy 상태입니다.');return
         log.event('STABILIZE_PLAN','복귀 컨테이너 자동 시작을 해제·중지하고 기존 독립 FileBrowser만 시작합니다. 데이터/컨테이너를 삭제하지 않습니다.')
         if not apply:return
@@ -236,6 +238,10 @@ def stabilize(root, apply, log):
             run(['docker','--context','default','start',old['id']],log,'STABILIZE_FALLBACK')
             log.event('STABILIZE_FAILED','독립 서비스 기동 실패. 기존 서비스를 수동 재개했으며 자동 재시작 정책은 해제 상태로 보존합니다.')
             raise
+        from filebrowser_network import endpoint_ready, local_health
+        if not endpoint_ready(after) or not local_health():
+            state['preserved_restart_state']='disabled';state['endpoint_state']='check_required';save_json(journal,state)
+            raise ValueError('STABILIZE_ENDPOINT: 내부는 정상이나 외부 연결 미확인. repair-filebrowser-network로 확인하세요.')
         state['preserved_restart_state']='disabled';save_json(journal,state)
         value['preserved_restart_policy']='no';value['control_state']='switched_pending_review';save_json(root/'projects.json',records)
         history(root,'FileBrowser 복귀용 컨테이너 자동 재시작 해제·정지, 동일 독립 컨테이너 healthy 확인.',log)
