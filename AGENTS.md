@@ -1,6 +1,8 @@
 # 저장소 작업 지침
 
-- 주 작업은 posting-automation/이다. 기존 backend/, frontend/, 기존 DB는 사용자가 별도로 요청하지 않는 한 수정하지 않는다.
+- 작업 분야를 먼저 확인한다. 공간활용(자습실·작업실 등) 작업은 `docs/space-utilization/README.md`부터 읽고 해당 폴더의 기획·작업 현황·인수인계를 따른다. 포스팅 문서를 공간활용 요구사항으로 적용하지 않는다.
+- 포스팅 자동화 작업 범위는 posting-automation/이다. 아래 포스팅 경로·검증·서버 운영 지침은 해당 작업에 적용한다. 공간활용 문서 정리만으로 기존 backend/, frontend/, DB 변경이 승인된 것은 아니다.
+- 커밋과 push는 각각 사용자 별도 승인 후 진행한다.
 - 사용자 자료·.env·인증정보·.local·원고/사진·서버 조사 원본은 Git에 추가하지 않는다.
 - 라즈서버 운영 기준은 posting-automation/operations/server-workspace/AGENTS.md를 따른다. 이 문서는 manage_server.py가 서버의 관리 루트에도 설치하는 원본이다.
 - 서버 디렉터리 표준은 ~/web-server/<프로젝트>/{repo,data,backups}이며 Compose 정의는 한 곳에서 관리한다. 이전 apps/services/app-data 제안은 이 표준으로 대체한다. 기존 경로를 자동으로 옮기지는 않는다.
