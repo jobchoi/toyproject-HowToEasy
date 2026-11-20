@@ -1,4 +1,4 @@
--- 수동 적용 전용. 기존 students 테이블과 데이터는 변경하지 않는다.
+-- 앱 시작 시 이력 관리와 함께 적용한다. 기존 students 테이블과 데이터는 변경하지 않는다.
 -- 연결마다 PRAGMA foreign_keys = ON이 필요하다. 날짜는 YYYY-MM-DD, 경계는 [시작, 종료).
 PRAGMA foreign_keys = ON;
 BEGIN;

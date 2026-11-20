@@ -49,3 +49,23 @@ EXCEL_ANALYSIS의 초기 질문 중 빈칸/파일 용도는 답변을 받았다.
 ## 2026-11-20 — V1 부분 구현 인수인계
 
 `backend/migrations/001_space_utilization.sql`은 자동 실행되지 않는 별도 스키마이며 실제 DB에 적용하지 않았다. `backend/tests/test_space_migration.py`는 메모리 DB만 사용한다. 공통 스키마의 일부와 제약만 구현했으며 API·화면, 응답·표, 로그인, 백업·복구 및 동시성 검증은 남았다. 기존 서버의 import 시 `create_all` 동작을 확인하고 테스트에서 실제 DB로 연결되지 않도록 격리해야 한다. SQLAlchemy와 FastAPI가 현재 확인한 Python 환경에 없어 설치 없이 앱 실행을 검증할 수 없었다. 기존 데이터 이전과 실제 DB 적용은 별도 승인 대상이다.
+
+## 2026-11-20 — API·화면 연결 후
+
+공간·이용자·좌석·배정 API와 화면을 추가했다. 001은 수동 적용 전용이며 기존 DB에 적용하지 않았다. 임시 SQLite 테스트 6개와 프런트 lint/build가 통과했다. 로컬 포트 바인딩이 실패해 HTTP·브라우저는 미검증이다. 운영 기간·시간대, 사전 응답·표, 로그인·백업·복구, 동시성·이력 보호는 남았다. 기존 데이터 전환과 실제 DB 적용에는 별도 승인이 필요하다.
+
+## 2026-11-20 — 시작 시 스키마 준비 QC
+
+백엔드는 시작(lifespan) 시 현재 작업 디렉터리의 `study_room.db`에 학생 테이블과 `migrations/001_space_utilization.sql`을 자동 준비한다. 공간 마이그레이션과 `schema_migrations` 기록은 하나의 SQLite 트랜잭션으로 처리하며 재시작 시 기록을 확인해 건너뛴다. 학생 데이터는 이전하지 않는다. 공간 스키마만 수동 적용했거나 일부만 존재하지만 이력이 없는 DB는 충돌 시 시작에 실패하고 공간 마이그레이션을 롤백한다. 해당 DB는 백업 후 스키마와 이력을 별도 검토해야 하며 임의로 이력을 추가하지 않는다. SQL 파일을 직접 수동 실행하는 방식은 앱의 이력을 남기지 않으므로 사용하지 않는다.
+
+격리 실행 예시 (실제 DB에 적용하지 않도록 빈 임시 작업 디렉터리에서 실행):
+
+```sh
+cd backend
+BACKEND_DIR="$PWD"
+mkdir -p /tmp/space-utilization-qc
+cd /tmp/space-utilization-qc
+PYTHONPATH="$BACKEND_DIR" python -m uvicorn main:app --port 8000
+```
+
+프런트는 별도 터미널에서 `cd frontend && npm run dev`로 실행한다. 테스트는 저장소 루트에서 `python -m unittest discover -s backend/tests -v`로 실행한다. 합성 임시 DB의 신규·학생 전용 DB를 앱 lifespan으로 두 번 초기화하고 네 조회 함수를 확인했다. 실제 DB 적용과 기존 데이터 전환은 수행하지 않았다. HTTP·브라우저 재검증은 별도다.

@@ -1,13 +1,19 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, field_validator
-from app.database.db import get_db, engine, Base
+from app.database.db import get_db, engine, initialize_database
 from app.models.student import Student
+from app.space_api import router as space_router
 
-Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(_app):
+    initialize_database(engine)
+    yield
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
+app.include_router(space_router)
 
 app.add_middleware(
     CORSMiddleware,
