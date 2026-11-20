@@ -6,6 +6,12 @@ from pydantic import BaseModel, field_validator
 from app.database.db import get_db, engine, initialize_database
 from app.models.student import Student
 from app.space_api import router as space_router
+from app.auth import router as auth_router, current_user
+from app.backups import router as backup_router
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session as AuthSession
+import asyncio
 
 @asynccontextmanager
 async def lifespan(_app):
@@ -14,7 +20,33 @@ async def lifespan(_app):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(space_router)
+app.include_router(auth_router)
+app.include_router(backup_router)
 
+# Serialize full requests so a restore cannot overlap another in-process request.
+class RequestGuard:
+    def __init__(self, app):
+        self.app = app
+        self.lock = asyncio.Lock()
+
+    async def __call__(self, scope, receive, send):
+        if scope['type'] != 'http':
+            return await self.app(scope, receive, send)
+        async with self.lock:
+            path = scope['path']
+            protected = ((path.startswith('/api/') and path != '/api/auth/login' and
+                          not path.startswith('/api/auth/') and not path.startswith('/api/backups'))
+                         or path == '/students')
+            if protected and scope['method'] != 'OPTIONS':
+                with AuthSession(engine) as db:
+                    try:
+                        current_user(Request(scope), db)
+                    except HTTPException as exc:
+                        response = JSONResponse(status_code=exc.status_code, content={'detail': exc.detail})
+                        return await response(scope, receive, send)
+            await self.app(scope, receive, send)
+
+app.add_middleware(RequestGuard)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],

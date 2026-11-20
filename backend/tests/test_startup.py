@@ -37,7 +37,7 @@ class StartupTest(unittest.TestCase):
                     asyncio.run(start())
                 with sqlite3.connect(path) as db:
                     self.assertEqual(db.execute('SELECT count(*) FROM spaces').fetchone()[0], 1)
-                    self.assertEqual({r[0] for r in db.execute('SELECT version FROM schema_migrations')}, {'001_space_utilization', '002_weekly_responses'})
+                    self.assertEqual({r[0] for r in db.execute('SELECT version FROM schema_migrations')}, {'001_space_utilization', '002_weekly_responses', '003_auth'})
                     if legacy:
                         self.assertEqual(db.execute('SELECT student_id FROM students').fetchone()[0], 'synthetic')
                 engine.dispose()

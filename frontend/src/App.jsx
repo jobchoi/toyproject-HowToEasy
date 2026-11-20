@@ -5,6 +5,11 @@ const API = "http://localhost:8000/api"
 const initialAssignment = { user_id: "", space_id: "", seat_id: "", starts_on: "", ends_on: "" }
 
 function App() {
+  const [token, setToken] = useState(() => sessionStorage.getItem("spaceToken") || "")
+  const [account, setAccount] = useState(null)
+  const [credentials, setCredentials] = useState({ username: "", password: "" })
+  const [newAccount, setNewAccount] = useState({ username: "", password: "", role: "staff" })
+  const [backups, setBackups] = useState([])
   const [spaces, setSpaces] = useState([])
   const [users, setUsers] = useState([])
   const [seats, setSeats] = useState([])
@@ -30,12 +35,13 @@ function App() {
   async function request(path, options) {
     let response
     try {
-      response = await fetch(API + path, options)
+      response = await fetch(API + path, { ...options, headers: { ...options?.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) } })
     } catch {
       throw new Error(`API 연결 실패 (${path}): 서버가 실행 중인지 확인하세요.`)
     }
     const data = await response.json().catch(() => null)
     if (!response.ok) {
+      if (response.status === 401 && path !== "/auth/login") { sessionStorage.removeItem("spaceToken"); setToken(""); setAccount(null) }
       const detail = typeof data?.detail === "string" ? `: ${data.detail}` : ""
       throw new Error(`API 오류 (${path}, HTTP ${response.status})${detail}`)
     }
@@ -47,10 +53,33 @@ function App() {
     setSpaces(a); setUsers(b); setSeats(c); setAssignments(d); setPeriods(p); setSlots(t); setResponses(r)
   }
   useEffect(() => {
-    Promise.all(["/spaces", "/users", "/seats", "/assignments", "/periods", "/time-slots", "/weekly-responses"].map(path => request(path)))
-      .then(([a, b, c, d, p, t, r]) => { setSpaces(a); setUsers(b); setSeats(c); setAssignments(d); setPeriods(p); setSlots(t); setResponses(r) })
-      .catch(e => setMessage(e.message))
-  }, [])
+    if (!token) return
+    Promise.resolve().then(() => request("/auth/me")).then(setAccount).catch(e => setMessage(e.message))
+  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!account) return
+    Promise.resolve().then(() => refresh()).catch(e => setMessage(e.message))
+    if (account.role === "admin") Promise.resolve().then(() => request("/backups")).then(setBackups).catch(e => setMessage(e.message))
+  }, [account]) // eslint-disable-line react-hooks/exhaustive-deps
+  async function login(e) {
+    e.preventDefault()
+    try {
+      const result = await request("/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(credentials) })
+      sessionStorage.setItem("spaceToken", result.token); setToken(result.token); setCredentials({ username: "", password: "" }); setMessage("")
+    } catch (error) { setMessage(error.message) }
+  }
+  async function logout() {
+    try { await request("/auth/logout", { method: "POST" }) } catch { /* clear local session regardless */ }
+    sessionStorage.removeItem("spaceToken"); setToken(""); setAccount(null)
+  }
+  async function manageBackup(name) {
+    if (name && !window.confirm("선택한 백업으로 복구합니다. 현재 DB는 자동 백업되며 다시 로그인해야 합니다. 계속할까요?")) return
+    try {
+      const result = await request(name ? "/backups/restore" : "/backups", { method: "POST", headers: { "Content-Type": "application/json" }, body: name ? JSON.stringify({ name }) : undefined })
+      if (name) { sessionStorage.removeItem("spaceToken"); setToken(""); setAccount(null); setMessage(`복구했습니다. 복구 전 백업: ${result.pre_restore_backup}. 다시 로그인하세요.`) }
+      else { setBackups(await request("/backups")); setMessage(`백업 생성: ${result.name}`) }
+    } catch (error) { setMessage(error.message) }
+  }
   async function submit(path, data, reset, method = "POST") {
     try {
       await request(path, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
@@ -68,9 +97,16 @@ function App() {
   const weekday = reportValid ? (new Date(`${reportDate}T00:00:00`).getDay() + 6) % 7 : -1
   const reportAssignments = reportValid ? assignments.filter(a => a.space_id === chosenPeriod.space_id && a.starts_on <= reportDate && (!a.ends_on || reportDate < a.ends_on)) : []
   const reportSlots = slots.filter(t => t.period_id === Number(reportPeriod))
+  if (!token || !account) return <div style={{ padding: "20px" }}><h1>담당자 로그인</h1>{message && <p role="status">{message}</p>}<form onSubmit={login}>
+    <input aria-label="아이디" autoComplete="username" required value={credentials.username} onChange={e => setCredentials({ ...credentials, username: e.target.value })} />
+    <input aria-label="비밀번호" type="password" autoComplete="current-password" required value={credentials.password} onChange={e => setCredentials({ ...credentials, password: e.target.value })} /><button>로그인</button></form></div>
   return <div style={{ padding: "20px" }}>
     <h1>공간 활용 관리</h1>
+    <p>{account.username} ({account.role === "admin" ? "운영자" : "담당자"}) <button onClick={logout}>로그아웃</button></p>
     {message && <p role="status">{message}</p>}
+    {account.role === "admin" && <section><h2>담당자 계정 생성</h2><form onSubmit={async e => { e.preventDefault(); try { await request("/auth/accounts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newAccount) }); setNewAccount({ username: "", password: "", role: "staff" }); setMessage("계정을 생성했습니다.") } catch (error) { setMessage(error.message) } }}>
+      <input aria-label="새 아이디" placeholder="아이디" required value={newAccount.username} onChange={e => setNewAccount({ ...newAccount, username: e.target.value })} /><input aria-label="새 비밀번호" placeholder="비밀번호 (8자 이상)" type="password" minLength="8" required value={newAccount.password} onChange={e => setNewAccount({ ...newAccount, password: e.target.value })} /><select aria-label="계정 역할" value={newAccount.role} onChange={e => setNewAccount({ ...newAccount, role: e.target.value })}><option value="staff">담당자</option><option value="admin">운영자</option></select><button>계정 생성</button></form>
+      <h2>백업·복구</h2><button onClick={() => manageBackup()}>현재 DB 백업</button><ul>{backups.map(name => <li key={name}>{name} <button onClick={() => manageBackup(name)}>복구</button></li>)}</ul></section>}
     <section className="report-controls"><h2>운영표·좌석표 조회</h2>
       <select aria-label="표 운영 기간" value={reportPeriod} onChange={e => setReportPeriod(e.target.value)}><option value="">공간 / 기간 선택</option>{periods.map(p => <option key={p.id} value={p.id}>{spaceName(p.space_id)} / {p.name}</option>)}</select>
       <input aria-label="표 기준 날짜" type="date" value={reportDate} onChange={e => setReportDate(e.target.value)} />
