@@ -159,3 +159,53 @@ def move_assignment(assignment_id: int, value: MoveIn, db: Session = Depends(get
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(400, str(exc.orig)) from exc
+
+class PeriodIn(BaseModel):
+    space_id: int
+    name: str
+    starts_on: date
+    ends_on: date
+
+    @field_validator('name')
+    @classmethod
+    def nonempty(cls, value):
+        if not value.strip():
+            raise ValueError('이름을 입력하세요')
+        return value.strip()
+
+class SlotIn(BaseModel):
+    period_id: int
+    name: str
+    starts_at: str
+    ends_at: str
+
+    @field_validator('name')
+    @classmethod
+    def nonempty(cls, value):
+        if not value.strip():
+            raise ValueError('이름을 입력하세요')
+        return value.strip()
+
+    @field_validator('starts_at', 'ends_at')
+    @classmethod
+    def valid_time(cls, value):
+        import re
+        if not re.fullmatch(r'(?:[01][0-9]|2[0-3]):[0-5][0-9]', value):
+            raise ValueError('시간은 HH:MM 형식이어야 합니다')
+        return value
+
+@router.get('/periods')
+def periods(db: Session = Depends(get_db)):
+    return rows(db, 'SELECT * FROM operating_periods ORDER BY starts_on DESC, id DESC')
+
+@router.post('/periods')
+def create_period(value: PeriodIn, db: Session = Depends(get_db)):
+    return save(db, 'INSERT INTO operating_periods (space_id, name, starts_on, ends_on) VALUES (:space_id, :name, :starts_on, :ends_on)', value.model_dump(mode='json'))
+
+@router.get('/time-slots')
+def time_slots(db: Session = Depends(get_db)):
+    return rows(db, 'SELECT * FROM time_slots ORDER BY period_id, starts_at, id')
+
+@router.post('/time-slots')
+def create_time_slot(value: SlotIn, db: Session = Depends(get_db)):
+    return save(db, 'INSERT INTO time_slots (period_id, name, starts_at, ends_at) VALUES (:period_id, :name, :starts_at, :ends_at)', value.model_dump())

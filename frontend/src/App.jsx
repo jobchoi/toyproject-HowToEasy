@@ -16,6 +16,10 @@ function App() {
   const [moveId, setMoveId] = useState("")
   const [endId, setEndId] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [periods, setPeriods] = useState([])
+  const [slots, setSlots] = useState([])
+  const [period, setPeriod] = useState({ space_id: "", name: "", starts_on: "", ends_on: "" })
+  const [slot, setSlot] = useState({ period_id: "", name: "", starts_at: "", ends_at: "" })
   const [message, setMessage] = useState("")
 
   async function request(path, options) {
@@ -34,12 +38,12 @@ function App() {
     return data
   }
   async function refresh() {
-    const [a, b, c, d] = await Promise.all(["/spaces", "/users", "/seats", "/assignments"].map(path => request(path)))
-    setSpaces(a); setUsers(b); setSeats(c); setAssignments(d)
+    const [a, b, c, d, p, t] = await Promise.all(["/spaces", "/users", "/seats", "/assignments", "/periods", "/time-slots"].map(path => request(path)))
+    setSpaces(a); setUsers(b); setSeats(c); setAssignments(d); setPeriods(p); setSlots(t)
   }
   useEffect(() => {
-    Promise.all(["/spaces", "/users", "/seats", "/assignments"].map(path => request(path)))
-      .then(([a, b, c, d]) => { setSpaces(a); setUsers(b); setSeats(c); setAssignments(d) })
+    Promise.all(["/spaces", "/users", "/seats", "/assignments", "/periods", "/time-slots"].map(path => request(path)))
+      .then(([a, b, c, d, p, t]) => { setSpaces(a); setUsers(b); setSeats(c); setAssignments(d); setPeriods(p); setSlots(t) })
       .catch(e => setMessage(e.message))
   }, [])
   async function submit(path, data, reset, method = "POST") {
@@ -65,6 +69,21 @@ function App() {
       <button>추가</button>
     </form>
     <ul>{spaces.map(s => <li key={s.id}>{s.name} ({s.uses_seats ? "좌석 사용" : "좌석 없음"}{s.study_room ? ", 자습실" : ""})</li>)}</ul>
+    <h2>운영 기간</h2>
+    <form onSubmit={e => { e.preventDefault(); submit('/periods', { ...period, space_id: Number(period.space_id) }, () => setPeriod({ space_id: "", name: "", starts_on: "", ends_on: "" })) }}>
+      <select aria-label="운영 기간 공간" required value={period.space_id} onChange={e => setPeriod({ ...period, space_id: e.target.value })}><option value="">공간 선택</option>{spaces.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+      <input aria-label="운영 기간 이름" placeholder="기간 이름" required value={period.name} onChange={e => setPeriod({ ...period, name: e.target.value })} />
+      <label>시작일 <input type="date" required value={period.starts_on} onChange={e => setPeriod({ ...period, starts_on: e.target.value })} /></label>
+      <label>종료일 (미포함) <input type="date" required value={period.ends_on} onChange={e => setPeriod({ ...period, ends_on: e.target.value })} /></label><button>추가</button>
+    </form>
+    <ul>{periods.map(p => <li key={p.id}>{spaceName(p.space_id)} / {p.name} / {p.starts_on} ~ {p.ends_on} (종료일 미포함)</li>)}</ul>
+    <h2>주간 반복 시간대</h2>
+    <form onSubmit={e => { e.preventDefault(); submit('/time-slots', { ...slot, period_id: Number(slot.period_id) }, () => setSlot({ period_id: "", name: "", starts_at: "", ends_at: "" })) }}>
+      <select aria-label="시간대 운영 기간" required value={slot.period_id} onChange={e => setSlot({ ...slot, period_id: e.target.value })}><option value="">기간 선택</option>{periods.map(p => <option key={p.id} value={p.id}>{spaceName(p.space_id)} / {p.name}</option>)}</select>
+      <input aria-label="시간대 이름" placeholder="시간대 이름" required value={slot.name} onChange={e => setSlot({ ...slot, name: e.target.value })} />
+      <label>시작 <input type="time" required value={slot.starts_at} onChange={e => setSlot({ ...slot, starts_at: e.target.value })} /></label><label>종료 <input type="time" required value={slot.ends_at} onChange={e => setSlot({ ...slot, ends_at: e.target.value })} /></label><button>추가</button>
+    </form>
+    <ul>{slots.map(t => <li key={t.id}>{periods.find(p => p.id === t.period_id)?.name} / {t.name} / {t.starts_at} ~ {t.ends_at}</li>)}</ul>
     <h2>이용자 {editUser ? "수정" : "등록"}</h2>
     <form onSubmit={e => { e.preventDefault(); submit(editUser ? `/users/${editUser}` : "/users", user, () => { setUser({ name: "", identifier: "", student_id: "", gender: "" }); setEditUser(null) }, editUser ? "PUT" : "POST") }}>
       {[['name', '이름'], ['identifier', '식별 정보'], ['student_id', '학번'], ['gender', '성별']].map(([key, label]) => <input key={key} aria-label={label} placeholder={label} required={key === 'name'} value={user[key] || ""} onChange={e => setUser({ ...user, [key]: e.target.value })} />)}

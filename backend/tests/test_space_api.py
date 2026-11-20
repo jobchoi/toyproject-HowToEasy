@@ -58,3 +58,20 @@ class SpaceApiTest(unittest.TestCase):
             create_seat(SeatIn(space_id=sp, number='1'), self.db)
         create_assignment(AssignmentIn(user_id=user, space_id=sp, starts_on='2020-01-01', ends_on='2020-02-01'), self.db)
         self.assertIsNone(assignments(self.db)[0]['seat_id'])
+
+    def test_periods_and_slots(self):
+        from pydantic import ValidationError
+        from app.space_api import PeriodIn, SlotIn, create_period, periods, create_time_slot, time_slots
+        sp = create_space(SpaceIn(name='합성 공간', uses_seats=False), self.db)['id']
+        pid = create_period(PeriodIn(space_id=sp, name='봄', starts_on='2090-03-01', ends_on='2090-04-01'), self.db)['id']
+        create_time_slot(SlotIn(period_id=pid, name='오전', starts_at='09:00', ends_at='12:00'), self.db)
+        self.assertEqual(periods(self.db)[0]['ends_on'], '2090-04-01')
+        self.assertEqual(time_slots(self.db)[0]['starts_at'], '09:00')
+        with self.assertRaises(HTTPException):
+            create_period(PeriodIn(space_id=sp, name='오류', starts_on='2090-04-01', ends_on='2090-04-01'), self.db)
+        with self.assertRaises(HTTPException):
+            create_time_slot(SlotIn(period_id=pid, name='오류', starts_at='12:00', ends_at='09:00'), self.db)
+        with self.assertRaises(HTTPException):
+            create_time_slot(SlotIn(period_id=99999, name='오류', starts_at='09:00', ends_at='10:00'), self.db)
+        with self.assertRaises(ValidationError):
+            SlotIn(period_id=pid, name='오류', starts_at='24:00', ends_at='10:00')
