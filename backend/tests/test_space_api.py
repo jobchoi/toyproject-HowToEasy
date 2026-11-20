@@ -75,3 +75,21 @@ class SpaceApiTest(unittest.TestCase):
             create_time_slot(SlotIn(period_id=99999, name='오류', starts_at='09:00', ends_at='10:00'), self.db)
         with self.assertRaises(ValidationError):
             SlotIn(period_id=pid, name='오류', starts_at='24:00', ends_at='10:00')
+
+    def test_weekly_response_and_clear(self):
+        from app.space_api import PeriodIn, SlotIn, WeeklyResponseIn, create_period, create_time_slot, put_weekly_response, weekly_responses
+        from pydantic import ValidationError
+        sp = create_space(SpaceIn(name='합성', uses_seats=False), self.db)['id']
+        user = create_user(UserIn(name='합성'), self.db)['id']
+        pid = create_period(PeriodIn(space_id=sp, name='기간', starts_on='2090-01-01', ends_on='2090-03-01'), self.db)['id']
+        slot = create_time_slot(SlotIn(period_id=pid, name='오전', starts_at='09:00', ends_at='10:00'), self.db)['id']
+        self.assertEqual(weekly_responses(self.db), [])
+        put_weekly_response(WeeklyResponseIn(user_id=user, slot_id=slot, weekday=0, status='attending'), self.db)
+        put_weekly_response(WeeklyResponseIn(user_id=user, slot_id=slot, weekday=0, status='absent', reason='사유'), self.db)
+        self.assertEqual(weekly_responses(self.db)[0]['status'], 'absent')
+        put_weekly_response(WeeklyResponseIn(user_id=user, slot_id=slot, weekday=0), self.db)
+        self.assertEqual(weekly_responses(self.db), [])
+        with self.assertRaises(ValidationError):
+            WeeklyResponseIn(user_id=user, slot_id=slot, weekday=7, status='attending')
+        with self.assertRaises(HTTPException):
+            put_weekly_response(WeeklyResponseIn(user_id=99999, slot_id=slot, weekday=0), self.db)

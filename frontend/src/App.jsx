@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import "./App.css"
 
 const API = "http://localhost:8000/api"
 const initialAssignment = { user_id: "", space_id: "", seat_id: "", starts_on: "", ends_on: "" }
@@ -20,6 +21,10 @@ function App() {
   const [slots, setSlots] = useState([])
   const [period, setPeriod] = useState({ space_id: "", name: "", starts_on: "", ends_on: "" })
   const [slot, setSlot] = useState({ period_id: "", name: "", starts_at: "", ends_at: "" })
+  const [reportPeriod, setReportPeriod] = useState("")
+  const [reportDate, setReportDate] = useState("")
+  const [responses, setResponses] = useState([])
+  const [response, setResponse] = useState({ user_id: '', slot_id: '', weekday: '0', status: '', reason: '' })
   const [message, setMessage] = useState("")
 
   async function request(path, options) {
@@ -38,12 +43,12 @@ function App() {
     return data
   }
   async function refresh() {
-    const [a, b, c, d, p, t] = await Promise.all(["/spaces", "/users", "/seats", "/assignments", "/periods", "/time-slots"].map(path => request(path)))
-    setSpaces(a); setUsers(b); setSeats(c); setAssignments(d); setPeriods(p); setSlots(t)
+    const [a, b, c, d, p, t, r] = await Promise.all(["/spaces", "/users", "/seats", "/assignments", "/periods", "/time-slots", "/weekly-responses"].map(path => request(path)))
+    setSpaces(a); setUsers(b); setSeats(c); setAssignments(d); setPeriods(p); setSlots(t); setResponses(r)
   }
   useEffect(() => {
-    Promise.all(["/spaces", "/users", "/seats", "/assignments", "/periods", "/time-slots"].map(path => request(path)))
-      .then(([a, b, c, d, p, t]) => { setSpaces(a); setUsers(b); setSeats(c); setAssignments(d); setPeriods(p); setSlots(t) })
+    Promise.all(["/spaces", "/users", "/seats", "/assignments", "/periods", "/time-slots", "/weekly-responses"].map(path => request(path)))
+      .then(([a, b, c, d, p, t, r]) => { setSpaces(a); setUsers(b); setSeats(c); setAssignments(d); setPeriods(p); setSlots(t); setResponses(r) })
       .catch(e => setMessage(e.message))
   }, [])
   async function submit(path, data, reset, method = "POST") {
@@ -58,10 +63,26 @@ function App() {
   const assignmentData = { ...assignment, user_id: Number(assignment.user_id), space_id: Number(assignment.space_id), seat_id: assignment.seat_id ? Number(assignment.seat_id) : null, ends_on: assignment.ends_on || null }
   const selectedSpace = spaces.find(s => s.id === Number(assignment.space_id))
 
+  const chosenPeriod = periods.find(p => p.id === Number(reportPeriod))
+  const reportValid = chosenPeriod && reportDate >= chosenPeriod.starts_on && reportDate < chosenPeriod.ends_on
+  const weekday = reportValid ? (new Date(`${reportDate}T00:00:00`).getDay() + 6) % 7 : -1
+  const reportAssignments = reportValid ? assignments.filter(a => a.space_id === chosenPeriod.space_id && a.starts_on <= reportDate && (!a.ends_on || reportDate < a.ends_on)) : []
+  const reportSlots = slots.filter(t => t.period_id === Number(reportPeriod))
   return <div style={{ padding: "20px" }}>
     <h1>공간 활용 관리</h1>
     {message && <p role="status">{message}</p>}
-    <h2>공간 추가</h2>
+    <section className="report-controls"><h2>운영표·좌석표 조회</h2>
+      <select aria-label="표 운영 기간" value={reportPeriod} onChange={e => setReportPeriod(e.target.value)}><option value="">공간 / 기간 선택</option>{periods.map(p => <option key={p.id} value={p.id}>{spaceName(p.space_id)} / {p.name}</option>)}</select>
+      <input aria-label="표 기준 날짜" type="date" value={reportDate} onChange={e => setReportDate(e.target.value)} />
+      <button type="button" disabled={!reportValid} onClick={() => window.print()}>인쇄</button>
+      {reportDate && chosenPeriod && !reportValid && <p>운영 기간 안의 날짜를 선택하세요 (종료일 미포함).</p>}
+    </section>
+    {reportValid && <section className="print-report"><h2>{spaceName(chosenPeriod.space_id)} / {chosenPeriod.name} / {reportDate}</h2>
+      <h3>운영표 ({['월','화','수','목','금','토','일'][weekday]}요일 주간 반복 사전 응답)</h3>
+      <table border="1" cellPadding="6"><thead><tr><th>이용자</th>{reportSlots.map(t => <th key={t.id}>{t.name} ({t.starts_at}~{t.ends_at})</th>)}</tr></thead><tbody>{reportAssignments.map(a => <tr key={a.id}><td>{userName(a.user_id)}</td>{reportSlots.map(t => { const r = responses.find(x => x.user_id === a.user_id && x.slot_id === t.id && x.weekday === weekday); return <td key={t.id}>{r ? (r.status === 'attending' ? '참여 예정' : '불참 예정') : '미응답'}{r?.reason ? ` (${r.reason})` : ''}</td> })}</tr>)}</tbody></table>
+      <h3>좌석표</h3><table border="1" cellPadding="6"><thead><tr><th>좌석</th><th>이용자</th></tr></thead><tbody>{reportAssignments.map(a => <tr key={a.id}><td>{seatName(a.seat_id)}</td><td>{userName(a.user_id)}</td></tr>)}</tbody></table>
+    </section>}
+    <div className="edit-content"><h2>공간 추가</h2>
     <form onSubmit={e => { e.preventDefault(); submit("/spaces", space, () => setSpace({ name: "", uses_seats: true, study_room: false })) }}>
       <input aria-label="공간 이름" placeholder="공간 이름" required value={space.name} onChange={e => setSpace({ ...space, name: e.target.value })} />
       <label><input type="checkbox" checked={space.uses_seats} onChange={e => setSpace({ ...space, uses_seats: e.target.checked })} />좌석 사용</label>
@@ -84,6 +105,16 @@ function App() {
       <label>시작 <input type="time" required value={slot.starts_at} onChange={e => setSlot({ ...slot, starts_at: e.target.value })} /></label><label>종료 <input type="time" required value={slot.ends_at} onChange={e => setSlot({ ...slot, ends_at: e.target.value })} /></label><button>추가</button>
     </form>
     <ul>{slots.map(t => <li key={t.id}>{periods.find(p => p.id === t.period_id)?.name} / {t.name} / {t.starts_at} ~ {t.ends_at}</li>)}</ul>
+    <h2>주간 사전 응답</h2>
+    <p>선택한 운영 기간의 매주 반복 일정입니다. 빈칸은 미응답입니다.</p>
+    <form onSubmit={e => { e.preventDefault(); submit('/weekly-responses', { ...response, user_id: Number(response.user_id), slot_id: Number(response.slot_id), weekday: Number(response.weekday), status: response.status || null }, () => {}, 'PUT') }}>
+      <select aria-label="응답 이용자" required value={response.user_id} onChange={e => setResponse({ ...response, user_id: e.target.value })}><option value="">이용자 선택</option>{users.map(u => <option key={u.id} value={u.id}>{u.name} {u.identifier}</option>)}</select>
+      <select aria-label="응답 시간대" required value={response.slot_id} onChange={e => setResponse({ ...response, slot_id: e.target.value })}><option value="">시간대 선택</option>{slots.map(t => <option key={t.id} value={t.id}>{periods.find(p => p.id === t.period_id)?.name} / {t.name}</option>)}</select>
+      <select aria-label="응답 요일" value={response.weekday} onChange={e => setResponse({ ...response, weekday: e.target.value })}>{['월','화','수','목','금','토','일'].map((d, i) => <option key={d} value={i}>{d}</option>)}</select>
+      <select aria-label="응답 상태" value={response.status} onChange={e => setResponse({ ...response, status: e.target.value })}><option value="">미응답</option><option value="attending">참여 예정</option><option value="absent">불참 예정</option></select>
+      <input aria-label="응답 사유" placeholder="사유 (선택)" value={response.reason} onChange={e => setResponse({ ...response, reason: e.target.value })} /><button>응답 저장</button>
+    </form>
+    <ul>{responses.map(r => <li key={`${r.user_id}-${r.slot_id}-${r.weekday}`}>{userName(r.user_id)} / {slots.find(t => t.id === r.slot_id)?.name} / {['월','화','수','목','금','토','일'][r.weekday]} / {r.status === 'attending' ? '참여 예정' : '불참 예정'} {r.reason}</li>)}</ul>
     <h2>이용자 {editUser ? "수정" : "등록"}</h2>
     <form onSubmit={e => { e.preventDefault(); submit(editUser ? `/users/${editUser}` : "/users", user, () => { setUser({ name: "", identifier: "", student_id: "", gender: "" }); setEditUser(null) }, editUser ? "PUT" : "POST") }}>
       {[['name', '이름'], ['identifier', '식별 정보'], ['student_id', '학번'], ['gender', '성별']].map(([key, label]) => <input key={key} aria-label={label} placeholder={label} required={key === 'name'} value={user[key] || ""} onChange={e => setUser({ ...user, [key]: e.target.value })} />)}
@@ -108,6 +139,7 @@ function App() {
     <h2>배정 이력</h2>
     <table border="1" cellPadding="8"><thead><tr><th>이용자</th><th>공간</th><th>좌석</th><th>시작일</th><th>종료일 (미포함)</th><th>관리</th></tr></thead><tbody>{assignments.map(a => <tr key={a.id}><td>{userName(a.user_id)}</td><td>{spaceName(a.space_id)}</td><td>{seatName(a.seat_id)}</td><td>{a.starts_on}</td><td>{a.ends_on || '미정'}</td><td><button onClick={() => { setMoveId(a.id); setAssignment(initialAssignment) }}>이동</button> <button onClick={() => { setEndId(a.id); setEndDate("") }}>종료</button></td></tr>)}</tbody></table>
     {endId && <form onSubmit={e => { e.preventDefault(); submit(`/assignments/${endId}/end`, { ends_on: endDate }, () => setEndId("")) }}><label>종료일 (미포함) <input type="date" required value={endDate} onChange={e => setEndDate(e.target.value)} /></label><button>배정 종료</button><button type="button" onClick={() => setEndId("")}>취소</button></form>}
+    </div>
   </div>
 }
 export default App

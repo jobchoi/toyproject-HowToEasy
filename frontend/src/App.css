@@ -182,3 +182,12 @@
     border-right-color: var(--border);
   }
 }
+
+@media print {
+  body { background: white; color: black; }
+  #root { max-width: none; margin: 0; padding: 0; }
+  .edit-content, .report-controls, h1, [role="status"] { display: none !important; }
+  .print-report table { border-collapse: collapse; width: 100%; }
+  .print-report th, .print-report td { border: 1px solid black; }
+  .print-report tr { break-inside: avoid; }
+}

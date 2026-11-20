@@ -30,23 +30,27 @@ def get_db():
 def initialize_database(target_engine):
     """Prepare the schema once; an incomplete or untracked migration fails safely."""
     Base.metadata.create_all(bind=target_engine)
-    migration = Path(__file__).resolve().parents[2] / "migrations/001_space_utilization.sql"
+    migrations = sorted((Path(__file__).resolve().parents[2] / "migrations").glob("*.sql"))
     connection = target_engine.raw_connection()
     try:
         cursor = connection.cursor()
         cursor.execute("BEGIN IMMEDIATE")
         cursor.execute("CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY)")
-        if not cursor.execute("SELECT 1 FROM schema_migrations WHERE version = ?", ("001_space_utilization",)).fetchone():
+        for migration in migrations:
+            version = migration.stem
+            if cursor.execute("SELECT 1 FROM schema_migrations WHERE version = ?", (version,)).fetchone():
+                continue
             statement = ""
             for line in migration.read_text(encoding="utf-8").splitlines(keepends=True):
                 statement += line
                 if sqlite3.complete_statement(statement):
                     sql = statement.strip()
-                    # Transaction and foreign-key settings are controlled by this function.
                     if not any(sql.endswith(command) for command in ("PRAGMA foreign_keys = ON;", "BEGIN;", "COMMIT;")):
                         cursor.execute(statement)
                     statement = ""
-            cursor.execute("INSERT INTO schema_migrations (version) VALUES (?)", ("001_space_utilization",))
+            if statement.strip():
+                raise ValueError(f"불완전한 마이그레이션: {version}")
+            cursor.execute("INSERT INTO schema_migrations (version) VALUES (?)", (version,))
         connection.commit()
     except Exception:
         connection.rollback()

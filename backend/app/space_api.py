@@ -209,3 +209,42 @@ def time_slots(db: Session = Depends(get_db)):
 @router.post('/time-slots')
 def create_time_slot(value: SlotIn, db: Session = Depends(get_db)):
     return save(db, 'INSERT INTO time_slots (period_id, name, starts_at, ends_at) VALUES (:period_id, :name, :starts_at, :ends_at)', value.model_dump())
+
+class WeeklyResponseIn(BaseModel):
+    user_id: int
+    slot_id: int
+    weekday: int
+    status: Optional[str] = None
+    reason: Optional[str] = None
+
+    @field_validator('weekday')
+    @classmethod
+    def valid_weekday(cls, value):
+        if not 0 <= value <= 6:
+            raise ValueError('요일은 0(월)부터 6(일)까지입니다')
+        return value
+
+    @field_validator('status')
+    @classmethod
+    def valid_status(cls, value):
+        if value not in (None, 'attending', 'absent'):
+            raise ValueError('응답을 확인하세요')
+        return value
+
+@router.get('/weekly-responses')
+def weekly_responses(db: Session = Depends(get_db)):
+    return rows(db, 'SELECT * FROM weekly_responses ORDER BY slot_id, weekday, user_id')
+
+@router.put('/weekly-responses')
+def put_weekly_response(value: WeeklyResponseIn, db: Session = Depends(get_db)):
+    data = value.model_dump()
+    if not db.execute(text('SELECT 1 FROM space_users WHERE id=:user_id'), data).first() or not db.execute(text('SELECT 1 FROM time_slots WHERE id=:slot_id'), data).first():
+        raise HTTPException(400, '이용자 또는 시간대를 찾을 수 없습니다')
+    if value.status is None:
+        db.execute(text('DELETE FROM weekly_responses WHERE user_id=:user_id AND slot_id=:slot_id AND weekday=:weekday'), data)
+    else:
+        db.execute(text('''INSERT INTO weekly_responses (user_id, slot_id, weekday, status, reason)
+            VALUES (:user_id, :slot_id, :weekday, :status, :reason)
+            ON CONFLICT(user_id, slot_id, weekday) DO UPDATE SET status=excluded.status, reason=excluded.reason'''), data)
+    db.commit()
+    return {'saved': True}
