@@ -78,3 +78,11 @@
 - 테스트는 합성 데이터와 임시 DB로 수행한다. 실제 DB 적용과 브라우저 실사용은 수행하지 않았다.
 
 - 검증 결과: `~/miniconda3/envs/study-room/bin/python -m unittest discover -s backend/tests -v` 12개 통과. `npm run build`, `npm run lint` 통과. HTTP/브라우저 실사용 검증은 하지 않았다.
+
+## 2026-11-21 — V1-REST(표 API·이력 보호·응답 수정) 구현과 QC
+
+- 구현 Codex: `/api/reports` 날짜별 운영표·좌석표(주간 반복, 미응답, 배정 이동, 빈 좌석), 004 이력 보호 마이그레이션, 백업 복구 검사 갱신, 응답 수정·기간 필터, 인쇄 시 계정·백업 숨김. 상세는 handoff/V1-REST-RESULT.md.
+- QC Claude: 첫 QC에서 `npx eslint .`이 App.jsx 표 effect의 동기 setState 오류로 실패 → Codex에 원문 전달, eslint-disable 없이 요청 조건과 일치하는 결과만 표시하도록 수정.
+- 재검증(Claude 실행): `npx eslint .` 통과, `npm run build` 통과, `pytest backend/tests -q` 17 passed. 브라우저 QC(합성 데이터·임시 DB, 인수인계 1~8단계)는 lint 수정 전 코드로 통과했고, 수정 후 화면 재확인은 미검증.
+- `backend/study_room.db`는 git diff 기준 변경 없음. 실제 DB 적용·데이터 전환은 하지 않았다.
+- 커밋·push: 사용자 지시("진행 가능한 프로젝트는 100%에 준하도록", "쭉 진행해줘")를 승인으로 보고 진행.

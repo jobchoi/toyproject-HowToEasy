@@ -248,3 +248,27 @@ def put_weekly_response(value: WeeklyResponseIn, db: Session = Depends(get_db)):
             ON CONFLICT(user_id, slot_id, weekday) DO UPDATE SET status=excluded.status, reason=excluded.reason'''), data)
     db.commit()
     return {'saved': True}
+
+@router.get('/reports')
+def report(period_id: int, on: date, db: Session = Depends(get_db)):
+    period = db.execute(text('SELECT * FROM operating_periods WHERE id=:id'), {'id': period_id}).mappings().first()
+    if not period:
+        raise HTTPException(404, '운영 기간을 찾을 수 없습니다')
+    day = on.isoformat()
+    if not period['starts_on'] <= day < period['ends_on']:
+        raise HTTPException(400, '운영 기간 안의 날짜를 선택하세요 (종료일 미포함)')
+    active = rows(db, '''SELECT a.*, u.name AS user_name FROM assignments a
+        JOIN space_users u ON u.id=a.user_id WHERE a.space_id=:space
+        AND a.starts_on<=:day AND (a.ends_on IS NULL OR :day<a.ends_on)
+        ORDER BY a.id''', {'space': period['space_id'], 'day': day})
+    slots = rows(db, 'SELECT * FROM time_slots WHERE period_id=:id ORDER BY starts_at, id', {'id': period_id})
+    responses = rows(db, '''SELECT r.* FROM weekly_responses r JOIN time_slots t ON t.id=r.slot_id
+        WHERE t.period_id=:id AND r.weekday=:weekday''', {'id': period_id, 'weekday': on.weekday()})
+    lookup = {(r['user_id'], r['slot_id']): r for r in responses}
+    for assignment in active:
+        assignment['responses'] = [dict(slot_id=s['id'], status=lookup.get((assignment['user_id'], s['id']), {}).get('status'),
+            reason=lookup.get((assignment['user_id'], s['id']), {}).get('reason')) for s in slots]
+    seat_rows = rows(db, 'SELECT * FROM seats WHERE space_id=:space ORDER BY number, id', {'space': period['space_id']})
+    return {'period': dict(period), 'date': day, 'slots': slots, 'assignments': active,
+            'seats': [dict(s, assignment=next((a for a in active if a['seat_id'] == s['id']), None))
+                      for s in seat_rows if s['active'] or any(a['seat_id'] == s['id'] for a in active)]}
