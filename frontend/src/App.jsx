@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import "./App.css"
 
 const API = "http://localhost:8000/api"
@@ -34,35 +34,39 @@ function App() {
   const [response, setResponse] = useState({ user_id: '', slot_id: '', weekday: '0', status: '', reason: '' })
   const [message, setMessage] = useState("")
 
-  async function request(path, options) {
+  const request = useCallback(async (path, options) => {
+    const requestToken = token
+    options?.signal?.throwIfAborted()
     let response
     try {
       response = await fetch(API + path, { ...options, headers: { ...options?.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) } })
-    } catch {
-      throw new Error(`API 연결 실패 (${path}): 서버가 실행 중인지 확인하세요.`)
+    } catch (error) {
+      if (options?.signal?.aborted) throw error
+      throw new Error(`API 연결 실패 (${path}): 서버가 실행 중인지 확인하세요.`, { cause: error })
     }
     const data = await response.json().catch(() => null)
+    options?.signal?.throwIfAborted()
     if (!response.ok) {
-      if (response.status === 401 && path !== "/auth/login") { sessionStorage.removeItem("spaceToken"); setToken(""); setAccount(null) }
+      if (response.status === 401 && path !== "/auth/login" && requestToken === (sessionStorage.getItem("spaceToken") || "")) { sessionStorage.removeItem("spaceToken"); setToken(""); setAccount(null) }
       const detail = typeof data?.detail === "string" ? `: ${data.detail}` : ""
       throw new Error(`API 오류 (${path}, HTTP ${response.status})${detail}`)
     }
     if (data === null) throw new Error(`API 응답을 읽을 수 없습니다 (${path}).`)
     return data
-  }
-  async function refresh() {
+  }, [token])
+  const refresh = useCallback(async () => {
     const [a, b, c, d, p, t, r] = await Promise.all(["/spaces", "/users", "/seats", "/assignments", "/periods", "/time-slots", "/weekly-responses"].map(path => request(path)))
     setSpaces(a); setUsers(b); setSeats(c); setAssignments(d); setPeriods(p); setSlots(t); setResponses(r)
-  }
+  }, [request])
   useEffect(() => {
     if (!token) return
     Promise.resolve().then(() => request("/auth/me")).then(setAccount).catch(e => setMessage(e.message))
-  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, request])
   useEffect(() => {
     if (!account) return
     Promise.resolve().then(() => refresh()).catch(e => setMessage(e.message))
     if (account.role === "admin") Promise.resolve().then(() => request("/backups")).then(setBackups).catch(e => setMessage(e.message))
-  }, [account]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [account, refresh, request])
   async function login(e) {
     e.preventDefault()
     try {
@@ -102,12 +106,12 @@ function App() {
     && reportResult.assignments === assignments && reportResult.responses === responses
     ? reportResult.data : null
   useEffect(() => {
-    let cancelled = false
-    if (token && reportValid) Promise.resolve().then(() => request(`/reports?period_id=${reportPeriod}&on=${reportDate}`))
-      .then(data => { if (!cancelled) setReportResult({ token, period: reportPeriod, date: reportDate, assignments, responses, data }) })
-      .catch(error => { if (!cancelled) setMessage(error.message) })
-    return () => { cancelled = true }
-  }, [token, reportPeriod, reportDate, reportValid, assignments, responses]) // eslint-disable-line react-hooks/exhaustive-deps
+    const controller = new AbortController()
+    if (token && reportValid) Promise.resolve().then(() => request(`/reports?period_id=${reportPeriod}&on=${reportDate}`, { signal: controller.signal }))
+      .then(data => { if (!controller.signal.aborted) setReportResult({ token, period: reportPeriod, date: reportDate, assignments, responses, data }) })
+      .catch(error => { if (!controller.signal.aborted) setMessage(error.message) })
+    return () => controller.abort()
+  }, [token, reportPeriod, reportDate, reportValid, assignments, responses, request])
   const weekday = reportValid ? (new Date(`${reportDate}T00:00:00`).getDay() + 6) % 7 : -1
   const reportAssignments = reportData?.assignments ?? []
   const reportSlots = reportData?.slots ?? []

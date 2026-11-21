@@ -11,6 +11,13 @@ from app.auth import admin
 from app.database.db import get_db
 
 router = APIRouter(prefix='/api/backups', dependencies=[Depends(admin)])
+# Keep in sync with 004_history_protection.sql; tests verify the actual migration.
+REQUIRED_HISTORY_TRIGGERS = {
+    'assignments_delete_protect': 'assignments',
+    'assignments_replace_protect': 'assignments',
+    'seats_delete_protect': 'seats',
+}
+
 NAME = re.compile(r'backup-\d{8}T\d{12}Z-[0-9a-f]{8}\.sqlite3')
 
 
@@ -66,6 +73,10 @@ def restore(value: RestoreIn, db: Session = Depends(get_db)):
             versions = {r[0] for r in check.execute('SELECT version FROM schema_migrations')}
             if versions != {'001_space_utilization', '002_weekly_responses', '003_auth', '004_history_protection'}:
                 raise ValueError('schema mismatch')
+            triggers = dict(check.execute(
+                "SELECT name, tbl_name FROM sqlite_master WHERE type='trigger'"))
+            if any(triggers.get(name) != table for name, table in REQUIRED_HISTORY_TRIGGERS.items()):
+                raise ValueError('history protection triggers missing')
     except (sqlite3.Error, ValueError) as exc:
         raise HTTPException(400, '백업 파일 또는 스키마가 유효하지 않습니다') from exc
     db.rollback()

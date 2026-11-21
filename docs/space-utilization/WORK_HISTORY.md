@@ -86,3 +86,9 @@
 - 재검증(Claude 실행): `npx eslint .` 통과, `npm run build` 통과, `pytest backend/tests -q` 17 passed. 브라우저 QC(합성 데이터·임시 DB, 인수인계 1~8단계)는 lint 수정 전 코드로 통과했고, 수정 후 화면 재확인은 미검증.
 - `backend/study_room.db`는 git diff 기준 변경 없음. 실제 DB 적용·데이터 전환은 하지 않았다.
 - 커밋·push: 사용자 지시("진행 가능한 프로젝트는 100%에 준하도록", "쭉 진행해줘")를 승인으로 보고 진행.
+
+## 2026-11-21 — V1-REST 교차 검토 후속 (검토 GPT, 구현 Codex, QC Claude)
+
+- GPT 읽기 전용 교차 검토: 필수 없음, 권장 4건(지연 401이 새 세션 해제, 003→004 업그레이드 미검증, 요일·초기화·기간 경계 테스트 간접, 복구 검사의 트리거 미확인).
+- Codex 수정: 표 조회 AbortController 취소와 요청 당시 토큰 일치 시에만 401 처리, 004 업그레이드·복구 후 보호 동작 테스트, 요일(월=0·일=6) 직접 검증·초기화 후 행 0·시작일 포함·기간 격리·사용 중지 좌석 과거 조회 테스트, 복구 시 필수 트리거 검사. 상세 handoff/V1-REST-FOLLOWUP-RESULT.md.
+- 재검증(Claude 실행): `npx eslint .` 통과, `npm run build` 통과, pytest 22 passed. `backend/study_room.db` 변경 없음. 화면 재확인은 미검증.
